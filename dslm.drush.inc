@@ -209,7 +209,10 @@ function drush_dslm_switch_dist() {
   // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
   if(!$dslm = _dslm_bootstrap())
     return false;
-  $run = $dslm->switch_dist(getcwd(), $dist);
+  // Pull the current site info for core filtering
+  $site_info = $dslm->siteInfo(getcwd());
+  // Run the switch
+  $run = $dslm->switch_dist(getcwd(), $dist, FALSE, $site_info['core']);
   if(!$run) {
     return drush_set_error($dslm->lastError());
   } else {

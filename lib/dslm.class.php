@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /**
  * Drupal DSLM
  * A PHP library to handle a central Drupal symlink structure

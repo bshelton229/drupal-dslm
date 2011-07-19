@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /**
  * @file dslm.drush.inc
  * Implements the DSLM drush commands

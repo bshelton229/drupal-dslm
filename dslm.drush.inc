@@ -5,8 +5,9 @@
  * Implements the DSLM drush commands
  */
 
-// Load the DSLM library
-require 'lib/dslm.class.php';
+DEFINE('DSLM_PATH', dirname(__FILE__));
+
+require_once DSLM_PATH . '/lib/dslm.class.php';
 
 /**
  * Implementation of hook_drush_help().

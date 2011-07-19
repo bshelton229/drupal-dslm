@@ -18,7 +18,7 @@ class Dslm {
   public function __construct($base) {
     // @TODO: add base validation
     $this->base = $base;
-    return true;
+    return TRUE;
   }
   
   /**
@@ -43,7 +43,7 @@ class Dslm {
   /**
    * Get the Drupal dists
    */
-  public function get_dists($major=false) {
+  public function get_dists($major=FALSE) {
     $out = array();
     foreach($this->files_in_dir($this->get_base() . "/dists/") as $dist) {
       if($this->is_dist_string($dist))
@@ -81,17 +81,17 @@ class Dslm {
   /**
    * Fucntion to return site info
    */
-  public function siteInfo($d=false) {
+  public function siteInfo($d=FALSE) {
     if(!$d) { $d = getcwd(); }
     if(!$this->is_drupal_dir($d)) {
       $this->last_error = 'This directory isn\'t a Drupal dir';
-      return false;      
+      return FALSE;      
     }
     $core = $this->first_link_dirname($d);
     $dist = $this->first_link_basename($d.'/sites');
     if(!$core || !$dist) {
       $this->last_error = 'Invalid symlinked site';
-      return false;
+      return FALSE;
     }
     $out = array(
       'core' => $core,
@@ -103,7 +103,7 @@ class Dslm {
   /**
    * Create a new drupal site
    */
-  public function new_site($dest_dir, $core=false, $dist=false, $force=false) {    
+  public function new_site($dest_dir, $core=FALSE, $dist=FALSE, $force=FALSE) {    
     // Load the base
     $base = $this->get_base();
     
@@ -111,12 +111,12 @@ class Dslm {
     // TODO: Much more validation needed here, wire in checking for empty, etc.
     if(file_exists($dest_dir) && !$force) {
       $this->last_error = "The directory already exists";
-      return false;
+      return FALSE;
     }
 
     // Run the dist and core switches
-    $core = $this->switch_core($dest_dir, $core, true);
-    $dist = $this->switch_dist($dest_dir, $dist, true, $core);
+    $core = $this->switch_core($dest_dir, $core, TRUE);
+    $dist = $this->switch_dist($dest_dir, $dist, TRUE, $core);
     
     // Create sites/default structure
     $dest_sites_default = "$dest_dir/sites/default";
@@ -130,24 +130,25 @@ class Dslm {
     }
 
     // Break here for testing right now
-    return true;
+    return TRUE;
   }
   
-  public function switch_core($dest_dir=false, $core=false, $force=false) {
+  public function switch_core($dest_dir=FALSE, $core=FALSE, $force=FALSE) {
     // Pull the base
     $base = $this->get_base();
     
     // Handle destination directory
     if(!$dest_dir) {  
       $dest_dir = getcwd(); 
-    } elseif(file_exists($dest_dir)) {
+    }
+    elseif(file_exists($dest_dir)) {
       $dest_dir = realpath($dest_dir);
     }
     
     // Make sure this is a drupal base
     if(!$this->is_drupal_dir($dest_dir) && !$force) {
       $this->last_error = 'Invalid Drupal Directory';
-      return false;
+      return FALSE;
     }
     // Get the core if it wasn't specified on the CLI
     if(!$core || !in_array($core, $this->get_cores())) {
@@ -185,13 +186,14 @@ class Dslm {
     // Handle destination directory
     if(!$dest_dir) { 
       $dest_dir = getcwd(); 
-    } else {
+    }
+    else {
       $dest_dir = realpath($dest_dir);
     }
     // Make sure this is a drupal base
     if(!$this->is_drupal_dir($dest_dir) && !$force) {
       $this->last_error = 'Invalid Drupal Directory';
-      return false;      
+      return FALSE;      
     }
     // Get the core if it wasn't specified on the CLI
     if(!$dist || !in_array($dist, $this->get_dists())) {
@@ -227,7 +229,7 @@ class Dslm {
    */
   
   /**
-   * Clean up the $base variable and return it or False
+   * Clean up the $base variable and return it or FALSE
    */
   protected function get_base() {
     // NOTE: Evaluate ^~ to $_SERVER['HOME'] if it's defined
@@ -246,7 +248,7 @@ class Dslm {
   protected function remove_all_links($d) {
     // Iterate through the dir and try readlink, if we get a match, unlink
     $delim = $this->is_windows() ? "\\" : "/";
-    if(!$d=realpath($d)) { return false; }
+    if(!$d=realpath($d)) { return FALSE; }
     foreach($this->files_in_dir($d) as $f) {
       $full = realpath($d) . $delim . $f;
       if(is_link($full)) { 
@@ -254,20 +256,22 @@ class Dslm {
           $target = readlink($full);
           if(is_dir($target)) {
             rmdir($full);
-          } else {
+          }
+          else {
             unlink($full);
           }
-        } else {
+        }
+        else {
           unlink($full);          
         }
       }
     }
-    return true;
+    return TRUE;
   }
   
   // Helper function to return the first dslm needed name from a file
   protected function first_link_basename($d) {
-    if(!file_exists($d)) { return false; }
+    if(!file_exists($d)) { return FALSE; }
     $d = realpath($d);
     foreach($this->files_in_dir($d) as $f) {
       $full = "$d/$f";
@@ -277,12 +281,12 @@ class Dslm {
         return basename($target);
       }
     }
-    return false;
+    return FALSE;
   }
   
   // Helper function to return the first dslm needed name from a file
   protected function first_link_dirname($d) {
-    if(!file_exists($d)) { return false; }
+    if(!file_exists($d)) { return FALSE; }
     $d = realpath($d);
     foreach($this->files_in_dir($d) as $f) {
       $full = "$d/$f";
@@ -292,7 +296,7 @@ class Dslm {
         return basename(dirname($target));
       }
     }
-    return false;
+    return FALSE;
   }
 
   /**
@@ -301,7 +305,7 @@ class Dslm {
   protected function files_in_dir($path) {
     $d = dir($path);
     $out = array();
-    while(false !== ($entry = $d->read())) {
+    while(FALSE !== ($entry = $d->read())) {
       // Exclude . and ..
       if($entry == '.' || $entry == '..') { continue; }
       $out[] = $entry;
@@ -331,7 +335,7 @@ class Dslm {
   /**
    * Internal function to get the distribution through CLI input
    */
-  protected function choose_dist($version_check=false) {
+  protected function choose_dist($version_check=FALSE) {
     // Pull our distributions
     $dists = $this->get_dists();
     // Version filtering
@@ -368,7 +372,7 @@ class Dslm {
    * Internal function to verify a directory is a drupal base
    */
   protected function is_drupal_dir($d) {
-    if(!file_exists($d)) { return false; }
+    if(!file_exists($d)) { return FALSE; }
     $d = realpath($d);
     $files = $this->files_in_dir($d);
     $checks = array(
@@ -379,8 +383,8 @@ class Dslm {
       'update.php',
       'cron.php',
     );
-    foreach($checks as $check) { if(!in_array($check,$files)) { return false; } }
-    return true;
+    foreach($checks as $check) { if(!in_array($check,$files)) { return FALSE; } }
+    return TRUE;
   }
 
   /**

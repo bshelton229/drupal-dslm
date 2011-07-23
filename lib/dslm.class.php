@@ -163,7 +163,7 @@ class Dslm {
     }
       
     $source_dir = "$base/cores/$core";
-    $this->remove_all_links($dest_dir);
+    $this->removeCoreLinks($dest_dir);
     foreach($this->files_in_dir($source_dir) as $f) {
       // Never link sites
       if($f == "sites")
@@ -269,27 +269,34 @@ class Dslm {
   }
   
   /**
-   * Internal function to remove all symlinks from a directory
+   * Internal function to remove symlinks back to a core
+   * @param $d
+   *  Directory to remove links from
+   * @return
+   *  Returns TRUE or FALSE
    */
-  protected function remove_all_links($d) {
+  protected function removeCoreLinks($d) {
     // Iterate through the dir and try readlink, if we get a match, unlink
     $delim = $this->isWindows() ? "\\" : "/";
     if(!$d=realpath($d)) { return FALSE; }
     foreach($this->files_in_dir($d) as $f) {
       $full = realpath($d) . $delim . $f;
       if(is_link($full)) { 
-        if($this->isWindows()) {
-          $target = readlink($full);
-          if(is_dir($target)) {
-            rmdir($full);
+        // Read the target
+        $target = readlink($full);
+        // Pull the dirname
+        $dirname = basename(dirname($target));
+        // Check to make sure the dirname matches a core regex
+        if($this->is_core_string($dirname)) {
+          if($this->isWindows()) {
+            $target = readlink($full);
+            // Windows needs rmdir if it's a link to a directory
+            if(is_dir($target)) { rmdir($full); } else { unlink($full); }
           }
           else {
-            unlink($full);
-          }
-        }
-        else {
-          // We're a sane operating system, just remove the link
-          unlink($full);          
+            // We're a sane operating system, just remove the link
+            unlink($full);          
+          } 
         }
       }
     }

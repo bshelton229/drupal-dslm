@@ -192,7 +192,7 @@ class Dslm {
     // Make sure this is a drupal base
     if(!$this->is_drupal_dir($dest_dir) && !$force) {
       $this->last_error = 'Invalid Drupal Directory';
-      return FALSE;      
+      return FALSE;  
     }
     // Get the core if it wasn't specified on the CLI
     if(!$dist || !in_array($dist, $this->get_dists())) {
@@ -207,9 +207,36 @@ class Dslm {
 
     // Link it up
     if(is_dir($sites_dir)) {
-      $this->remove_all_links($sites_dir);
+      // Define the sites/all directory
+      $sites_all_dir = $sites_dir . "/" . "all";
+
+      // Remove the current sites/all directory if it's a link
+      if(file_exists($sites_all_dir)) {
+        if(is_link($sites_all_dir)) {
+          if($this->isWindows()) {
+            $target = readlink($sites_all_dir);
+            if(is_dir($target)) {
+              rmdir($sites_all_dir);
+            }
+            else {
+              unlink($sites_all_dir);
+            }
+          }
+          else {
+            // We're a sane operating system, just remove the link
+            unlink($sites_all_dir);
+          }
+        }
+        else {
+          // If there is a sites/all directory which isn't a symlink we're going to be safe and error out
+          $this->last_error = 'The sites/all directory already exists and is not a symlink';
+          return FALSE;
+        }
+      }
+      
+      // Create our new symlink to the correct dist
       $dist_link_path = $this->relpath($source_dist_dir, $sites_dir);
-      symlink($dist_link_path, "$sites_dir/all");
+      symlink($dist_link_path, $sites_all_dir);
     }
     return $dist;
   }
@@ -246,12 +273,12 @@ class Dslm {
    */
   protected function remove_all_links($d) {
     // Iterate through the dir and try readlink, if we get a match, unlink
-    $delim = $this->is_windows() ? "\\" : "/";
+    $delim = $this->isWindows() ? "\\" : "/";
     if(!$d=realpath($d)) { return FALSE; }
     foreach($this->files_in_dir($d) as $f) {
       $full = realpath($d) . $delim . $f;
       if(is_link($full)) { 
-        if($this->is_windows()) {
+        if($this->isWindows()) {
           $target = readlink($full);
           if(is_dir($target)) {
             rmdir($full);
@@ -261,6 +288,7 @@ class Dslm {
           }
         }
         else {
+          // We're a sane operating system, just remove the link
           unlink($full);          
         }
       }
@@ -397,7 +425,7 @@ class Dslm {
     // This is only a limitation of the PHP symlink, I don't want to do an exec to mklink
     // because that breaks in the mysysgit shell, which is possibly where many Drush
     // users will be working on Windows.
-    if($this->is_windows()) {
+    if($this->isWindows()) {
       return realpath($path);
     }
 
@@ -446,7 +474,7 @@ class Dslm {
   /**
    * Returns boolean, are we windows?
    */
-  protected function is_windows() {
+  protected function isWindows() {
     return preg_match('/^win/i',PHP_OS);
   }
 

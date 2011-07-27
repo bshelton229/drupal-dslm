@@ -107,7 +107,7 @@ function drush_dslm_cores() {
   if(!$dslm = _dslm_bootstrap())
     return FALSE;
   // Iterate through the cores array and print them out
-  foreach($dslm->get_cores() as $key => $core) {
+  foreach($dslm->getCores() as $key => $core) {
     print $core . "\n";
   }
   return TRUE;
@@ -121,7 +121,7 @@ function drush_dslm_dists() {
   if(!$dslm = _dslm_bootstrap())
     return FALSE;
   // Iterate through the cores array and print them out
-  foreach($dslm->get_dists() as $key => $dist) {
+  foreach($dslm->getDists() as $key => $dist) {
     print $dist . "\n";
   }
   return TRUE;
@@ -157,7 +157,7 @@ function drush_dslm_new() {
     $dist = isset($args[3]) ? $args[3] : FALSE;    
   }
   
-  if(!$res = $dslm->new_site($site_dest, $core, $dist)) {
+  if(!$res = $dslm->newSite($site_dest, $core, $dist)) {
     return drush_set_error($dslm->lastErro());
   }
   else {
@@ -176,7 +176,7 @@ function drush_dslm_switch() {
   // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
   if(!$dslm = _dslm_bootstrap())
     return FALSE;
-  $run = $dslm->new_site(getcwd(), $core, $dist, TRUE);
+  $run = $dslm->newSite(getcwd(), $core, $dist, TRUE);
   if(!$run) {
     return drush_set_error($dslm->lastError());
   }
@@ -195,7 +195,7 @@ function drush_dslm_switch_core() {
   // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
   if(!$dslm = _dslm_bootstrap())
     return FALSE;
-  $run = $dslm->switch_core(getcwd(), $core);
+  $run = $dslm->switchCore(getcwd(), $core);
   if(!$run) {
     return drush_set_error($dslm->lastError());
   }
@@ -217,7 +217,7 @@ function drush_dslm_switch_dist() {
   // Pull the current site info for core filtering
   $site_info = $dslm->siteInfo(getcwd());
   // Run the switch
-  $run = $dslm->switch_dist(getcwd(), $dist, FALSE, $site_info['core']);
+  $run = $dslm->switchDist(getcwd(), $dist, FALSE, $site_info['core']);
   if(!$run) {
     return drush_set_error($dslm->lastError());
   }

@@ -30,33 +30,35 @@ class Dslm {
   /**
    * Get the Drupal cores
    */
-  public function get_cores($major = FALSE) {
+  public function getCores($major = FALSE) {
     $out = array();
-    foreach($this->files_in_dir($this->get_base() . "/cores/") as $core) {
-      if($this->is_core_string($core))
+    foreach($this->filesInDir($this->getBase() . "/cores/") as $core) {
+      if($this->isCoreString($core)) {
         $out[] = $core;
+      }
     }
-    return $this->order_by_version('core', $out);
+    return $this->orderByVersion('core', $out);
   }
   
   /**
    * Get the Drupal dists
    */
-  public function get_dists($major=FALSE) {
+  public function getDists($major=FALSE) {
     $out = array();
-    foreach($this->files_in_dir($this->get_base() . "/dists/") as $dist) {
-      if($this->is_dist_string($dist))
+    foreach($this->filesInDir($this->getBase() . "/dists/") as $dist) {
+      if($this->is_dist_string($dist)) {
         $out[] = $dist;
+      }
     }
-    return $this->order_by_version('dist', $out);
+    return $this->orderByVersion('dist', $out);
   }
   
   /**
    * Return the latest version core and dist
    */
   public function latest() {
-    $core = $this->order_by_version('core', $this->get_cores());
-    $dist = $this->order_by_version('dist', $this->get_dists());
+    $core = $this->orderByVersion('core', $this->getCores());
+    $dist = $this->orderByVersion('dist', $this->getDists());
     return array(
       'core' => $core[count($core)-1],
       'dist' => $dist[count($dist)-1],
@@ -66,15 +68,15 @@ class Dslm {
   /**
    * Check core
    */
-  public function is_valid_core($core) {
-    return in_array($core, $this->get_cores());
+  public function isValidCore($core) {
+    return in_array($core, $this->getCores());
   }
   
   /**
    * Check dist
    */
-  public function is_valid_dist($dist) {
-    return in_array($dist, $this->get_dists());
+  public function isValidDist($dist) {
+    return in_array($dist, $this->getDists());
   }
   
   /**
@@ -82,12 +84,12 @@ class Dslm {
    */
   public function siteInfo($d=FALSE) {
     if(!$d) { $d = getcwd(); }
-    if(!$this->is_drupal_dir($d)) {
+    if(!$this->isDrupalDir($d)) {
       $this->last_error = 'This directory isn\'t a Drupal dir';
       return FALSE;      
     }
-    $core = $this->first_link_dirname($d);
-    $dist = $this->first_link_basename($d.'/sites');
+    $core = $this->firstLinkDirname($d);
+    $dist = $this->firstLinkBasename($d.'/sites');
     if(!$core || !$dist) {
       $this->last_error = 'Invalid symlinked site';
       return FALSE;
@@ -102,9 +104,9 @@ class Dslm {
   /**
    * Create a new drupal site
    */
-  public function new_site($dest_dir, $core=FALSE, $dist=FALSE, $force=FALSE) {    
+  public function newSite($dest_dir, $core=FALSE, $dist=FALSE, $force=FALSE) {    
     // Load the base
-    $base = $this->get_base();
+    $base = $this->getBase();
     
     // Dest Directory creation and validation
     // TODO: Much more validation needed here, wire in checking for empty, etc.
@@ -114,8 +116,8 @@ class Dslm {
     }
 
     // Run the dist and core switches
-    $core = $this->switch_core($dest_dir, $core, TRUE);
-    $dist = $this->switch_dist($dest_dir, $dist, TRUE, $core);
+    $core = $this->switchCore($dest_dir, $core, TRUE);
+    $dist = $this->switchDist($dest_dir, $dist, TRUE, $core);
     
     // Create sites/default structure
     $dest_sites_default = "$dest_dir/sites/default";
@@ -132,9 +134,9 @@ class Dslm {
     return TRUE;
   }
   
-  public function switch_core($dest_dir=FALSE, $core=FALSE, $force=FALSE) {
+  public function switchCore($dest_dir=FALSE, $core=FALSE, $force=FALSE) {
     // Pull the base
-    $base = $this->get_base();
+    $base = $this->getBase();
     
     // Handle destination directory
     if(!$dest_dir) {  
@@ -145,13 +147,13 @@ class Dslm {
     }
     
     // Make sure this is a drupal base
-    if(!$this->is_drupal_dir($dest_dir) && !$force) {
+    if(!$this->isDrupalDir($dest_dir) && !$force) {
       $this->last_error = 'Invalid Drupal Directory';
       return FALSE;
     }
     // Get the core if it wasn't specified on the CLI
-    if(!$core || !in_array($core, $this->get_cores())) {
-      $core = $this->choose_core();
+    if(!$core || !in_array($core, $this->getCores())) {
+      $core = $this->chooseCore();
     }
     
     // They've had the option to cancel when choosing a core
@@ -164,7 +166,7 @@ class Dslm {
       
     $source_dir = "$base/cores/$core";
     $this->removeCoreLinks($dest_dir);
-    foreach($this->files_in_dir($source_dir) as $f) {
+    foreach($this->filesInDir($source_dir) as $f) {
       // Never link sites
       if($f == "sites")
         continue;
@@ -179,9 +181,9 @@ class Dslm {
    * @param $dest_dir
    *  Option specify the destination directory
    */
-  public function switch_dist($dest_dir = FALSE, $dist = FALSE, $force = FALSE, $filter = FALSE) {
+  public function switchDist($dest_dir = FALSE, $dist = FALSE, $force = FALSE, $filter = FALSE) {
     // Pull the base
-    $base = $this->get_base();
+    $base = $this->getBase();
     // Handle destination directory
     if(!$dest_dir) { 
       $dest_dir = getcwd(); 
@@ -190,16 +192,16 @@ class Dslm {
       $dest_dir = realpath($dest_dir);
     }
     // Make sure this is a drupal base
-    if(!$this->is_drupal_dir($dest_dir) && !$force) {
+    if(!$this->isDrupalDir($dest_dir) && !$force) {
       $this->last_error = 'Invalid Drupal Directory';
       return FALSE;  
     }
     // Get the core if it wasn't specified on the CLI
-    if(!$dist || !in_array($dist, $this->get_dists())) {
-      $dist = $this->choose_dist($filter);
+    if(!$dist || !in_array($dist, $this->getDists())) {
+      $dist = $this->chooseDist($filter);
     }
       
-    $source_dist_dir = $this->get_base() . "/dists/$dist";
+    $source_dist_dir = $this->getBase() . "/dists/$dist";
     $sites_dir = $dest_dir . '/sites';
     
     // If the sites dir doesn't exist, create it
@@ -257,7 +259,7 @@ class Dslm {
   /**
    * Clean up the $base variable and return it or FALSE
    */
-  protected function get_base() {
+  protected function getBase() {
     // NOTE: Evaluate ^~ to $_SERVER['HOME'] if it's defined
     $base = $this->base;
     // PHP doesn't resolve ~ as the home directory
@@ -279,7 +281,7 @@ class Dslm {
     // Iterate through the dir and try readlink, if we get a match, unlink
     $delim = $this->isWindows() ? "\\" : "/";
     if(!$d=realpath($d)) { return FALSE; }
-    foreach($this->files_in_dir($d) as $f) {
+    foreach($this->filesInDir($d) as $f) {
       $full = realpath($d) . $delim . $f;
       if(is_link($full)) { 
         // Read the target
@@ -287,7 +289,7 @@ class Dslm {
         // Pull the dirname
         $dirname = basename(dirname($target));
         // Check to make sure the dirname matches a core regex
-        if($this->is_core_string($dirname)) {
+        if($this->isCoreString($dirname)) {
           if($this->isWindows()) {
             $target = readlink($full);
             // Windows needs rmdir if it's a link to a directory
@@ -304,10 +306,10 @@ class Dslm {
   }
   
   // Helper function to return the first dslm needed name from a file
-  protected function first_link_basename($d) {
+  protected function firstLinkBasename($d) {
     if(!file_exists($d)) { return FALSE; }
     $d = realpath($d);
-    foreach($this->files_in_dir($d) as $f) {
+    foreach($this->filesInDir($d) as $f) {
       $full = "$d/$f";
       if(is_link($full)) {
         $target = readlink($full);
@@ -319,10 +321,10 @@ class Dslm {
   }
   
   // Helper function to return the first dslm needed name from a file
-  protected function first_link_dirname($d) {
+  protected function firstLinkDirname($d) {
     if(!file_exists($d)) { return FALSE; }
     $d = realpath($d);
-    foreach($this->files_in_dir($d) as $f) {
+    foreach($this->filesInDir($d) as $f) {
       $full = "$d/$f";
       if(is_link($full)) {
         $target = readlink($full);
@@ -336,7 +338,7 @@ class Dslm {
   /**
    * Return an array of the files in a directory
    */
-  protected function files_in_dir($path) {
+  protected function filesInDir($path) {
     $d = dir($path);
     $out = array();
     while(FALSE !== ($entry = $d->read())) {
@@ -351,9 +353,9 @@ class Dslm {
   /**
    * Internal function to get the core through CLI input
    */
-  protected function choose_core() {
+  protected function chooseCore() {
     // Pull our cores
-    $cores = $this->get_cores();
+    $cores = $this->getCores();
     // Present the cores to the user
     foreach($cores as $k => $core) {
       print $k+1 . ". $core\n";
@@ -369,9 +371,9 @@ class Dslm {
   /**
    * Internal function to get the distribution through CLI input
    */
-  protected function choose_dist($version_check=FALSE) {
+  protected function chooseDist($version_check=FALSE) {
     // Pull our distributions
-    $dists = $this->get_dists();
+    $dists = $this->getDists();
     // Version filtering
     if($version_check) {
       preg_match('/-(\d+)\./', $version_check, $version_match);
@@ -405,10 +407,10 @@ class Dslm {
   /**
    * Internal function to verify a directory is a drupal base
    */
-  protected function is_drupal_dir($d) {
+  protected function isDrupalDir($d) {
     if(!file_exists($d)) { return FALSE; }
     $d = realpath($d);
-    $files = $this->files_in_dir($d);
+    $files = $this->filesInDir($d);
     $checks = array(
       '.htaccess',
       'CHANGELOG.txt',
@@ -489,7 +491,7 @@ class Dslm {
    * Do a version compare and return the latest
    * $type = dist or core, defaults to core
    */
-  protected function order_by_version($type='core', $v) {
+  protected function orderByVersion($type='core', $v) {
     // The core_sort function
     if(!function_exists("core_sort")) {
       function core_sort($a,$b) {
@@ -525,7 +527,7 @@ class Dslm {
   }
   
   // Check the core against a regular expression
-  protected function is_core_string($s) {
+  protected function isCoreString($s) {
     return preg_match('/(.+)\-[\d+]\./', $s);
   }
   

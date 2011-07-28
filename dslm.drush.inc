@@ -93,7 +93,7 @@ function drush_dslm_info() {
     return FALSE;
   // Iterate through the cores array and print them out
   if(!$info = $dslm->siteInfo()) {
-    return drush_set_error($dslm->lastErro());
+    return drush_set_error($dslm->lastError());
   }
   print "Core: {$info['core']} (Dist: {$info['dist']})\n";
   return TRUE;
@@ -158,7 +158,7 @@ function drush_dslm_new() {
   }
   
   if(!$res = $dslm->newSite($site_dest, $core, $dist)) {
-    return drush_set_error($dslm->lastErro());
+    return drush_set_error($dslm->lastError());
   }
   else {
     return TRUE;

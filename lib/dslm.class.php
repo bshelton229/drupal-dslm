@@ -213,26 +213,26 @@ class Dslm {
       $sites_all_dir = $sites_dir . "/" . "all";
 
       // Remove the current sites/all directory if it's a link
-      if(file_exists($sites_all_dir)) {
-        if(is_link($sites_all_dir)) {
-          if($this->isWindows()) {
-            $target = readlink($sites_all_dir);
-            if(is_dir($target)) {
-              rmdir($sites_all_dir);
-            }
-            else {
-              unlink($sites_all_dir);
-            }
+      if(is_link($sites_all_dir)) {
+        if($this->isWindows()) {
+          $target = readlink($sites_all_dir);
+          if(is_dir($target)) {
+            rmdir($sites_all_dir);
           }
           else {
-            // We're a sane operating system, just remove the link
             unlink($sites_all_dir);
           }
         }
         else {
-          // If there is a sites/all directory which isn't a symlink we're going to be safe and error out
+          // We're a sane operating system, just remove the link
+          unlink($sites_all_dir);
+        }
+      }
+      else {
+        // If there is a sites/all directory which isn't a symlink we're going to be safe and error out
+        if(file_exists($sites_all_dir)) {
           $this->last_error = 'The sites/all directory already exists and is not a symlink';
-          return FALSE;
+          return FALSE;            
         }
       }
       

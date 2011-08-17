@@ -151,6 +151,7 @@ class Dslm {
       $this->last_error = 'Invalid Drupal Directory';
       return FALSE;
     }
+    
     // Get the core if it wasn't specified on the CLI
     if(!$core || !in_array($core, $this->getCores())) {
       $core = $this->chooseCore();
@@ -159,7 +160,7 @@ class Dslm {
     // They've had the option to cancel when choosing a core
     // If at this point the dest_dir doesn't exit and we're forcing,
     // let's try to create it
-    if(!file_exists($dest_dir) && $force) { 
+    if(!file_exists($dest_dir) && !is_link($dest_dir) && $force) { 
       mkdir($dest_dir);
       $dest_dir = realpath($dest_dir); 
     }

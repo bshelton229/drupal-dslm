@@ -265,7 +265,7 @@ class Dslm {
     $base = $this->base;
     // PHP doesn't resolve ~ as the home directory
     if(isset($_SERVER['HOME'])) {
-      $base = preg_replace('/^\~/', '/Users/bshelton', $base);
+      $base = preg_replace('/^\~/', $_SERVER['HOME'], $base);
     }
     // Eventually we'll put validation here
     return realpath($base);

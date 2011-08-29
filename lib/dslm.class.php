@@ -428,57 +428,58 @@ class Dslm {
    * Fetch the relative path between two paths
    * Relative paths aren't supported by symlink() in PHP on Windows
    */
-  protected function relpath( $path, $compareTo ) {
-    
+  protected function relpath( $dest, $root = '', $dir_sep = '/' ) {
+
     // Relative paths aren't supported by symlink() in Windows right now
     // If we're windows, just return the realpath of $path
     // This is only a limitation of the PHP symlink, I don't want to do an exec to mklink
     // because that breaks in the mysysgit shell, which is possibly where many Drush
     // users will be working on Windows.
     if($this->isWindows()) {
-      return realpath($path);
+      return realpath($dest);
     }
 
-    // clean arguments by removing trailing and prefixing slashes
-    if ( substr( $path, -1 ) == '/' ) {
-      $path = substr( $path, 0, -1 );
-    }
-    if ( substr( $path, 0, 1 ) == '/' ) {
-      $path = substr( $path, 1 );
-    }
-
-    if ( substr( $compareTo, -1 ) == '/' ) {
-      $compareTo = substr( $compareTo, 0, -1 );
-    }
-    if ( substr( $compareTo, 0, 1 ) == '/' ) {
-      $compareTo = substr( $compareTo, 1 );
-    }
-
-    // simple case: $compareTo is in $path
-    if ( strpos( $path, $compareTo ) === 0 ) {
-      $offset = strlen( $compareTo ) + 1;
-      return substr( $path, $offset );
-    }
-
-    $relative  = array(  );
-    $pathParts = explode( '/', $path );
-    $compareToParts = explode( '/', $compareTo );
-
-    foreach( $compareToParts as $index => $part ) {
-      if ( isset( $pathParts[$index] ) && $pathParts[$index] == $part ) {
+    $root = explode($dir_sep, $root);
+    $dest = explode($dir_sep, $dest);
+    $path = '.';
+    $fix = '';
+    $diff = 0;
+    for($i = -1; ++$i < max(($rC = count($root)), ($dC = count($dest)));)
+    { 
+      if(isset($root[$i]) and isset($dest[$i]))
+      {
+       if($diff)
+       { 
+        $path .= $dir_sep. '..';
+        $fix .= $dir_sep. $dest[$i];
         continue;
-      }
-      $relative[] = '..';
-    }
-
-    foreach( $pathParts as $index => $part ) {
-      if ( isset( $compareToParts[$index] ) && $compareToParts[$index] == $part ) {
+       }
+       if($root[$i] != $dest[$i])
+       {
+        $diff = 1;
+        $path .= $dir_sep. '..';
+        $fix .= $dir_sep. $dest[$i];
         continue;
+       }
       }
-      $relative[] = $part;
-    }
-
-    return implode( '/', $relative );
+      elseif(!isset($root[$i]) and isset($dest[$i]))
+      {
+       for($j = $i-1; ++$j < $dC;)
+       {
+        $fix .= $dir_sep. $dest[$j];
+       }
+       break;
+      }
+      elseif(isset($root[$i]) and !isset($dest[$i]))
+      {
+       for($j = $i-1; ++$j < $rC;)
+       {
+        $fix = $dir_sep. '..'. $fix;
+       }
+       break;
+      }
+     }
+    return $path. $fix;
   }
 
   /**

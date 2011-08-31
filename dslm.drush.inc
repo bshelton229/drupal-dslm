@@ -89,10 +89,10 @@ function dslm_drush_command() {
  */
 function drush_dslm_info() {
   // Bootstrap dslm, this grabs the instantiated and configured DSLM library object
-  if(!$dslm = _dslm_bootstrap())
+  if (!$dslm = _dslm_bootstrap())
     return FALSE;
   // Iterate through the cores array and print them out
-  if(!$info = $dslm->siteInfo()) {
+  if (!$info = $dslm->siteInfo()) {
     return drush_set_error($dslm->lastError());
   }
   print "Core: {$info['core']} (Dist: {$info['dist']})\n";
@@ -104,10 +104,11 @@ function drush_dslm_info() {
  */
 function drush_dslm_cores() {
   // Bootstrap dslm, this grabs the instantiated and configured dslm library object
-  if(!$dslm = _dslm_bootstrap())
+  if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
+  }
   // Iterate through the cores array and print them out
-  foreach($dslm->getCores() as $key => $core) {
+  foreach ($dslm->getCores() as $key => $core) {
     print $core . "\n";
   }
   return TRUE;
@@ -118,10 +119,11 @@ function drush_dslm_cores() {
  */
 function drush_dslm_dists() {
   // Bootstrap dslm, this grabs the instantiated and configured dslm library object
-  if(!$dslm = _dslm_bootstrap())
+  if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
+  }
   // Iterate through the cores array and print them out
-  foreach($dslm->getDists() as $key => $dist) {
+  foreach ($dslm->getDists() as $key => $dist) {
     print $dist . "\n";
   }
   return TRUE;
@@ -133,7 +135,7 @@ function drush_dslm_dists() {
 function drush_dslm_new() {
   // Pull the args
   $args = drush_get_arguments();
-  if(!isset($args[1])) {
+  if (!isset($args[1])) {
     return drush_set_error('DSLM: Please provide a site destination');
   }
   else {
@@ -141,13 +143,14 @@ function drush_dslm_new() {
   }
 
   // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
-  if(!$dslm = _dslm_bootstrap())
+  if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
+  }
 
   // Pull the latest option
   $use_latest = drush_get_option('latest', FALSE);
   // Set the dist and core, either supplied on the CLI, set with --latest, or will prompt
-  if($use_latest) {
+  if ($use_latest) {
     $latest = $dslm->latest();
     $core = $latest['core'];
     $dist = $latest['dist'];
@@ -157,7 +160,7 @@ function drush_dslm_new() {
     $dist = isset($args[3]) ? $args[3] : FALSE;    
   }
   
-  if(!$res = $dslm->newSite($site_dest, $core, $dist)) {
+  if (!$res = $dslm->newSite($site_dest, $core, $dist)) {
     return drush_set_error($dslm->lastError());
   }
   else {
@@ -174,10 +177,12 @@ function drush_dslm_switch() {
   $dist = isset($args[2]) ? $args[2] : FALSE;
   
   // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
-  if(!$dslm = _dslm_bootstrap())
+  if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
+  }
+
   $run = $dslm->newSite(getcwd(), $core, $dist, TRUE);
-  if(!$run) {
+  if (!$run) {
     return drush_set_error($dslm->lastError());
   }
   else {
@@ -193,10 +198,11 @@ function drush_dslm_switch_core() {
   $core = isset($args[1]) ? $args[1] : FALSE;
 
   // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
-  if(!$dslm = _dslm_bootstrap())
+  if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
+  }
   $run = $dslm->switchCore(getcwd(), $core);
-  if(!$run) {
+  if (!$run) {
     return drush_set_error($dslm->lastError());
   }
   else {
@@ -212,13 +218,15 @@ function drush_dslm_switch_dist() {
   $dist = isset($args[1]) ? $args[1] : FALSE;
 
   // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
-  if(!$dslm = _dslm_bootstrap())
+  if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
+  }
+
   // Pull the current site info for core filtering
   $site_info = $dslm->siteInfo(getcwd());
   // Run the switch
   $run = $dslm->switchDist(getcwd(), $dist, FALSE, $site_info['core']);
-  if(!$run) {
+  if (!$run) {
     return drush_set_error($dslm->lastError());
   }
   else {
@@ -232,7 +240,7 @@ function drush_dslm_switch_dist() {
  *  Returns an instantiated Dslm object
  */
 function _dslm_bootstrap() {
-  if(!$base = _dslm_get_base()) {
+  if (!$base = _dslm_get_base()) {
     return drush_set_error('Please set a dslm drupal base');
   }
   // Instantiate the dslm object
@@ -251,11 +259,11 @@ function _dslm_bootstrap() {
  */
 function _dslm_get_base() {
   // Try to find our base
-  if($base = drush_get_option('dslm-base', FALSE)) {
+  if ($base = drush_get_option('dslm-base', FALSE)) {
     // We have this wet with --drupal-base on the cli
     return $base;
   }
-  elseif($base = drush_get_option('dslm_base', FALSE)) {
+  elseif ($base = drush_get_option('dslm_base', FALSE)) {
     // We have this set in the drushrc.php file
     return $base;
   }

@@ -30,7 +30,7 @@ distributions compatible with the cores. Like this:
                 -- libraries
 
 Once your base is set up as described above, you'll need to pass it to
-drush dslm in order to run most commands. There are three ways to set the
+drush dslm in order to run commands. There are three ways to set the
 location of your base.
 
 The base can be set using any of the options below. It will first look for

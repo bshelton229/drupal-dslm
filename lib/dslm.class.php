@@ -32,8 +32,11 @@ class Dslm {
 
   /**
    * Get the Drupal cores
+   *
+   * @return array
+   *  Returns an array or cores
    */
-  public function getCores($major = FALSE) {
+  public function getCores() {
     $out = array();
     foreach ($this->filesInDir($this->getBase() . "/cores/") as $core) {
       if ($this->isCoreString($core)) {
@@ -44,9 +47,12 @@ class Dslm {
   }
   
   /**
-   * Get the Drupal dists
+   * Get the dists
+   *
+   * @return array
+   *  Returns an array or dists
    */
-  public function getDists($major=FALSE) {
+  public function getDists() {
     $out = array();
     foreach ($this->filesInDir($this->getBase() . "/dists/") as $dist) {
       if ($this->is_dist_string($dist)) {

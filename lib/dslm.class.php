@@ -558,6 +558,12 @@ class Dslm {
   
   /**
    * Internal function to verify a directory is a drupal base
+   *
+   * @param string $d
+   *  The directory to check
+   *
+   * @return boolean
+   *  Returns boolean for whether the directory is a valid drupal dir or not
    */
   protected function isDrupalDir($d) {
     if (!file_exists($d)) {
@@ -566,9 +572,6 @@ class Dslm {
     $d = realpath($d);
     $files = $this->filesInDir($d);
     $checks = array(
-      '.htaccess',
-      'CHANGELOG.txt',
-      'COPYRIGHT.txt',
       'install.php',
       'update.php',
       'cron.php',

@@ -1,7 +1,6 @@
 <?php
 /**
- * @file dslm.drush.inc
- * Implements the DSLM drush commands
+ * @file dslm drush commands
  */
 
 DEFINE('DSLM_PATH', dirname(__FILE__));
@@ -16,7 +15,7 @@ function dslm_drush_help($section) {
     case 'meta:dslm:title':
       return dt('DSLM (Drupl Symlink Manager)');
     case 'meta:dslm:summary':
-      return dt('Drupal symlink management Drush commands');
+      return dt('Drupal symlink management Drush commands.');
   }
 }
 
@@ -25,7 +24,8 @@ function dslm_drush_help($section) {
  */
 function dslm_drush_command() {
   $items = array();
-  // Global DSLM arguments
+  
+  // Global dslm arguments
   $arguments = array(
     'dslm-base' => 'Change the dslm base directory'
   );
@@ -85,7 +85,7 @@ function dslm_drush_command() {
 }
 
 /**
- * Command callback. Displays the dslm information for a site if it a valid dslm site.
+ * Command callback. Displays the dslm information for a site.
  */
 function drush_dslm_info() {
   // Bootstrap dslm, this grabs the instantiated and configured DSLM library object
@@ -236,7 +236,7 @@ function drush_dslm_switch_dist() {
 
 /**
  * Internal bootstrap function
- * @return
+ * @return object
  *  Returns an instantiated Dslm object
  */
 function _dslm_bootstrap() {
@@ -254,7 +254,7 @@ function _dslm_bootstrap() {
  * - The cli switch --dslm-base=base
  * - The drushrc.php file $conf['dslm_base'] = base;
  * - The dslm_BASE system environment variable
- * @return
+ * @return string
  *  Returns a base path or FALSE
  */
 function _dslm_get_base() {

@@ -4,13 +4,30 @@
  * A PHP library to handle a central Drupal symlink structure
  */ 
 class Dslm {
-  // Attributes
+  /**
+   * The base folder
+   *
+   * @var string
+   */
   protected $base = FALSE;
+
+  /**
+   * The last error produced
+   *
+   * @var string
+   */
   protected $last_error = '';
+
+  /**
+   * Set to skip a dir check
+   *
+   * @var string
+   */
   protected $skip_dir_check = FALSE;
   
   /**
    * DSLM constructor
+   *
    * @param $base
    *  The base path containing the dists and cores
    */
@@ -25,6 +42,9 @@ class Dslm {
   
   /**
    * Set the skip_dir_check attribute
+   *
+   * @param boolean $in
+   *  The boolean value for the local set_skip_dir attribute
    */
   public function setSkipDirCheck($in = TRUE) {
     $this->skip_dir_check = (boolean) $in;
@@ -64,6 +84,9 @@ class Dslm {
   
   /**
    * Return the latest version core and dist
+   *
+   * @return array
+   *   Returns the latest dist and core
    */
   public function latest() {
     $core = $this->orderByVersion('core', $this->getCores());
@@ -76,6 +99,11 @@ class Dslm {
 
   /**
    * Check core
+   *
+   * @param string $core
+   *  The core to check
+   * @return boolean
+   *  Returns a boolean for whether the core is valid or not
    */
   public function isValidCore($core) {
     return in_array($core, $this->getCores());
@@ -83,15 +111,25 @@ class Dslm {
   
   /**
    * Check dist
+   *
+   * @param string $dist
+   *  The dist to check
+   * @return boolean
+   *  Returns a boolean for whether the dist is valid or not
    */
   public function isValidDist($dist) {
     return in_array($dist, $this->getDists());
   }
   
   /**
-   * Fucntion to return site info
+   * Returns site information
+   *
+   * @param boolean $d
+   *  The directory to use as the base, this will default to getcwd()
+   * @return array
+   *  Returns an array containing the current dist and core or FALSE
    */
-  public function siteInfo($d=FALSE) {
+  public function siteInfo($d = FALSE) {
     if (!$d) {
       $d = getcwd();
     }
@@ -114,8 +152,20 @@ class Dslm {
   
   /**
    * Create a new drupal site
+   *
+   * @param string $dest_dir
+   *  The destination directory for the new site
+   * @param string $core
+   *  The core to use
+   * @param string $dist
+   *  The dist to use
+   * @param boolean $force
+   *  Whether or not to force the site creation
+   *
+   * @return boolean
+   *  Returns boolean
    */
-  public function newSite($dest_dir, $core=FALSE, $dist=FALSE, $force=FALSE) {    
+  public function newSite($dest_dir, $core = FALSE, $dist = FALSE, $force = FALSE) {
     // Load the base
     $base = $this->getBase();
     
@@ -145,7 +195,21 @@ class Dslm {
     return TRUE;
   }
   
-  public function switchCore($dest_dir=FALSE, $core=FALSE, $force=FALSE) {
+
+  /**
+   * Switch the core
+   *
+   * @param string $dest_dir
+   *  The destination dir to switch the cor for, default to getcwd()
+   * @param string $core
+   *  The core to switch to.
+   * @param boolean $force
+   *  Whether or not to force the switch
+   *
+   * @return string
+   *  Returns the core it switched to.
+   */
+  public function switchCore($dest_dir = FALSE, $core = FALSE, $force = FALSE) {
     // Pull the base
     $base = $this->getBase();
     
@@ -191,8 +255,18 @@ class Dslm {
   
   /**
    * Switch the distribution
-   * @param $dest_dir
-   *  Option specify the destination directory
+   *
+   * @param string $dest_dir
+   *  The destination dir to switch the dist for.
+   * @param string $dist
+   *  The dist to switch to.
+   * @param boolean $force
+   *  Whether or not to force the switch
+   * @param string $filter
+   *  The major core version to filter for
+   *
+   * @return string
+   *  Returns the core it switched to.
    */
   public function switchDist($dest_dir = FALSE, $dist = FALSE, $force = FALSE, $filter = FALSE) {
     // Pull the base
@@ -348,7 +422,15 @@ class Dslm {
     return TRUE;
   }
   
-  // Helper function to return the first dslm needed name from a file
+  /**
+   * Helper method to return the basename of the first symlink in a given directory
+   *
+   * @param string $d
+   *  The directory to work in
+   *
+   * @return string or FALSE
+   *  Returns the basename or FALSE
+   */
   protected function firstLinkBasename($d) {
     if (!file_exists($d)) { return FALSE; }
     $d = realpath($d);
@@ -363,7 +445,15 @@ class Dslm {
     return FALSE;
   }
   
-  // Helper function to return the first dslm needed name from a file
+  /**
+   * Helper method to return the dirname of the first symlink in a given directory
+   *
+   * @param string $d
+   *  The directory to work in
+   *
+   * @return string or FALSE
+   *  Returns the dirname or FALSE
+   */
   protected function firstLinkDirname($d) {
     if (!file_exists($d)) {
       return FALSE;
@@ -382,6 +472,12 @@ class Dslm {
 
   /**
    * Return an array of the files in a directory
+   *
+   * @param string $path
+   *  The directory to search
+   *
+   * @return array
+   *  Returns an array of the filenames in the given directory
    */
   protected function filesInDir($path) {
     $d = dir($path);
@@ -398,7 +494,10 @@ class Dslm {
   }
   
   /**
-   * Internal function to get the core through CLI input
+   * Internal function to get the core through interactive input
+   *
+   * @return string
+   *  Returns the use chosen core
    */
   protected function chooseCore() {
     // Pull our cores
@@ -416,9 +515,15 @@ class Dslm {
   }
   
   /**
-   * Internal function to get the distribution through CLI input
+   * Internal function to get the distribution through interactive input
+   *
+   * @param string $version_check
+   *  Which major version to filter the choices by
+   *
+   * @return string
+   *  Returns the user chosen dist
    */
-  protected function chooseDist($version_check=FALSE) {
+  protected function chooseDist($version_check = FALSE) {
     // Pull our distributions
     $dists = $this->getDists();
     // Version filtering
@@ -477,8 +582,18 @@ class Dslm {
   }
 
   /**
-   * Fetch the relative path between two paths
-   * Relative paths aren't supported by symlink() in PHP on Windows
+   * Fetch the relative path between two absolute paths
+   * NOTE: Relative paths aren't supported by symlink() in PHP on Windows
+   *
+   * @param string $dest
+   *  The destination absolute path
+   * @param string $root
+   *  The root absolute path
+   * @param string $dir_sep
+   *  The directory separator, defaults to unix /
+   *
+   * @return string
+   *  Returns the relative path
    */
   protected function relpath($dest, $root = '', $dir_sep = '/') {
 
@@ -527,17 +642,30 @@ class Dslm {
   }
 
   /**
-   * Returns boolean, are we windows?
+   * Determine if we're MS Windows
+   *
+   * I was able to resist the urge not to name this method isBrokenOs()
+   * but not the urge to put the idea in this comment
+   *
+   * @return boolean
+   *  For whether we're windows or not.
    */
   protected function isWindows() {
     return preg_match('/^win/i',PHP_OS);
   }
 
   /**
-   * Do a version compare and return the latest
-   * $type = dist or core, defaults to core
+   * Takes an array of core or dist versions and sorts them by version number
+   *
+   * @param string $type
+   *  Should be core or dist to determine which we're sorting. Defaults to core
+   * @param array $v
+   *  An array containing the versions to sort
+   *
+   * @return array
+   *  Returns a sorted array by version
    */
-  protected function orderByVersion($type='core', $v) {
+  protected function orderByVersion($type = 'core', $v) {
     // The core_sort function
     if (!function_exists("core_sort")) {
       function core_sort($a,$b) {
@@ -572,12 +700,28 @@ class Dslm {
     return $v;
   }
   
-  // Check the core against a regular expression
+  /**
+   * Core validation
+   *
+   * @param string $s
+   *  The core string to validate
+   *
+   * @return boolean
+   *  Returns a boolean for validated or not
+   */
   protected function isCoreString($s) {
     return preg_match('/(.+)\-[\d+]\./', $s);
   }
   
-  // Check the dist against a regular expression
+  /**
+   * Distribution validation
+   *
+   * @param string $s
+   *  The dist string to validate
+   *
+   * @return boolean
+   *  Returns a boolean for validated or not
+   */
   protected function is_dist_string($s) {
     return preg_match('/([\d+])\.x\-[\d+]/', $s);
   }

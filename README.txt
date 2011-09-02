@@ -37,13 +37,13 @@ The base can be set using any of the options below. It will first look for
 the cli switch, then in your drushrc.php and finally for an enviro var.
  - The cli switch --dslm-base=base
  - The drushrc.php file $conf['dslm_base'] = base;
- - The dslm_BASE system environment variable
+ - The DSLM_BASE system environment variable
 
 
 COMMANDS
 --------
-drush dslm-new [site-directory]
-Will create a new site prompting you to choose which core and distribution it should be linked to. If you pass the --latest flag, the latest core and distribution will automatically be chosen
+drush dslm-new [site-directory] [dist] [core]
+Will create a new site prompting you to choose which core and distribution it should be linked to. If you pass the --latest flag, the latest core and distribution will automatically be chosen. You may optionally pass a valid core and dist on the command line to run non-interactively.
 
 drush dslm-info
 Will display the current core and distribution linked to the directory you're in.

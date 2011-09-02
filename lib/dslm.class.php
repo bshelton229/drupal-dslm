@@ -15,9 +15,12 @@ class Dslm {
    *  The base path containing the dists and cores
    */
   public function __construct($base) {
-    // @TODO: add base validation
-    $this->base = $base;
-    return TRUE;
+    // Validate the base
+    if ($valid_base = $this->validateBase($base)) {
+      $this->base = $valid_base;
+    } else {
+      $this->last_error = sprintf("The base dir \"%s\" is invalid. Please see the dslm README for more information on the dslm-base directory.", $base);
+    }
   }
   
   /**
@@ -255,22 +258,46 @@ class Dslm {
   public function lastError() {
     return $this->last_error;
   }
+
   /**
-   * Internal Functions
+   * Protected Methods
    */
   
   /**
-   * Clean up the $base variable and return it or FALSE
+   * Returns the dslm-base from $this->base
+   *
+   * @return string
+   *  Return $this->base
    */
   protected function getBase() {
-    // NOTE: Evaluate ^~ to $_SERVER['HOME'] if it's defined
-    $base = $this->base;
-    // PHP doesn't resolve ~ as the home directory
-    if (isset($_SERVER['HOME'])) {
-      $base = preg_replace('/^\~/', $_SERVER['HOME'], $base);
+    // @todo replace all calls to $this->getBase() with a reference to the $this->base attribute
+    // Base is now validated on instantiation, this is here for backward compatibility
+    return $this->base;
+  }
+  
+  /**
+   * Quick sanity check on the dslm base
+   *
+   * @param $base
+   *  A string containing the base directory to check
+   * @return FALSE or valid base
+   *  Return FALSE or a validated base
+   */
+  protected function validateBase($base) {
+    if (is_dir($base)) {
+      $contents = $this->filesInDir($base);
+      $check_for = array('dists', 'cores');
+      foreach ($check_for as $check) {
+        if (!in_array($check, $contents)) {
+          return FALSE;
+        }
+      }
+      // If the checks didn't return FALSE, return TRUE here.
+      return realpath($base);
     }
-    // @todo: Eventually we'll put validation here
-    return realpath($base);
+    
+    // Default to return FALSE
+    return FALSE;
   }
   
   /**

@@ -243,8 +243,15 @@ function _dslm_bootstrap() {
   if (!$base = _dslm_get_base()) {
     return drush_set_error('Please set a dslm drupal base');
   }
+
   // Instantiate the dslm object
   $dslm = new Dslm($base);
+
+  // If the base is bad on construct an error will be set
+  if ($last_error = $dslm->lastError()) {
+    return drush_set_error($last_error);
+  }
+
   return $dslm;
 }
 
@@ -258,17 +265,32 @@ function _dslm_bootstrap() {
  *  Returns a base path or FALSE
  */
 function _dslm_get_base() {
-  // Try to find our base
-  if ($base = drush_get_option('dslm-base', FALSE)) {
+  // Initialize an empty base.
+  $base = '';
+
+  // Try to get a base from one of the appropriate sources
+  if ($base_check = drush_get_option('dslm-base', FALSE)) {
     // We have this wet with --drupal-base on the cli
-    return $base;
+    $base = $base_check;
   }
-  elseif ($base = drush_get_option('dslm_base', FALSE)) {
+  elseif ($base_check = drush_get_option('dslm_base', FALSE)) {
     // We have this set in the drushrc.php file
-    return $base;
+    $base = $base_check;
   }
   else {
-    // Last ditch is the environment variable, return either it or FALSE
-    return isset($_ENV['DSLM_BASE']) ? $_ENV['DSLM_BASE'] : FALSE;
-  };
+    // Last ditch is tp ise the environment variable if it's set.
+    if (isset($_ENV['DSLM_BASE'])) {
+      $base = $_ENV['DSLM_BASE'];
+    } else {
+      // If we got here and there wasn't an environment variable set, bail
+      return FALSE;
+    }
+  }
+
+  // PHP doesn't resolve ~ as the home directory.
+  if (isset($_SERVER['HOME'])) {
+    $base = preg_replace('/^\~/', $_SERVER['HOME'], $base);
+  }
+  
+  return $base;
 }

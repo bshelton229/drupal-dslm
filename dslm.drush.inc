@@ -6,7 +6,7 @@
 
 DEFINE('DSLM_PATH', dirname(__FILE__));
 
-require_once DSLM_PATH . '/lib/dslm.class.php';
+  require_once DSLM_PATH . '/lib/dslm.class.php';
 
 /**
  * Implementation of hook_drush_help().

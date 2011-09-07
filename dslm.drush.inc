@@ -24,12 +24,12 @@ function dslm_drush_help($section) {
  */
 function dslm_drush_command() {
   $items = array();
-  
+
   // Global dslm arguments
   $arguments = array(
     'dslm-base' => 'Change the dslm base directory'
   );
-  
+
   $items['dslm-info'] = array(
     'description' => 'DSLM site information',
     'arguments' => $arguments,
@@ -43,14 +43,14 @@ function dslm_drush_command() {
     'aliases' => array('sc'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
-  
+
   $items['dslm-dists'] = array(
     'description' => 'DSLM  Show Cores',
     'arguments' => $arguments,
     'aliases' => array('sd'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
-  
+
   $items['dslm-new'] = array(
     'description' => 'DSLM  New Site',
     'arguments' => $arguments,
@@ -59,7 +59,7 @@ function dslm_drush_command() {
     'aliases' => array('sn'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
-  
+
   $items['dslm-switch'] = array(
     'description' => 'DSLM  Switch Core and Dist',
     'arguments' => $arguments,
@@ -73,7 +73,7 @@ function dslm_drush_command() {
     'aliases' => array('ssc'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
   );
-  
+
   $items['dslm-switch-dist'] = array(
     'description' => 'DSLM  Switch Dist',
     'arguments' => $arguments,
@@ -157,9 +157,9 @@ function drush_dslm_new() {
   }
   else {
     $core = isset($args[2]) ? $args[2] : FALSE;
-    $dist = isset($args[3]) ? $args[3] : FALSE;    
+    $dist = isset($args[3]) ? $args[3] : FALSE;
   }
-  
+
   if (!$res = $dslm->newSite($site_dest, $core, $dist)) {
     return drush_set_error($dslm->lastError());
   }
@@ -171,11 +171,11 @@ function drush_dslm_new() {
 /**
  * Command callback. Prompts the user to switch the dslm dist and core.
  */
-function drush_dslm_switch() {  
+function drush_dslm_switch() {
   $args = drush_get_arguments();
   $core = isset($args[1]) ? $args[1] : FALSE;
   $dist = isset($args[2]) ? $args[2] : FALSE;
-  
+
   // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
   if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
@@ -193,7 +193,7 @@ function drush_dslm_switch() {
 /**
  * Command callback. Prompts the user to switch the dslm core.
  */
-function drush_dslm_switch_core() {  
+function drush_dslm_switch_core() {
   $args = drush_get_arguments();
   $core = isset($args[1]) ? $args[1] : FALSE;
 
@@ -213,7 +213,7 @@ function drush_dslm_switch_core() {
 /**
  * Command callback. Prompts the user to switch the dslm dist.
  */
-function drush_dslm_switch_dist() {  
+function drush_dslm_switch_dist() {
   $args = drush_get_arguments();
   $dist = isset($args[1]) ? $args[1] : FALSE;
 
@@ -291,6 +291,6 @@ function _dslm_get_base() {
   if (isset($_SERVER['HOME'])) {
     $base = preg_replace('/^\~/', $_SERVER['HOME'], $base);
   }
-  
+
   return $base;
 }

@@ -30,6 +30,11 @@ function dslm_drush_command() {
     'dslm-base' => 'Change the dslm base directory'
   );
 
+  $release_options = array(
+    'latest' => 'Use the latest release(stable) version of core and/or dist.',
+    'dev' => 'Use the latest dev version of core and/or dist.',
+  );
+
   $items['dslm-info'] = array(
     'description' => 'DSLM site information',
     'arguments' => $arguments,
@@ -55,7 +60,7 @@ function dslm_drush_command() {
     'description' => 'DSLM  New Site',
     'arguments' => $arguments,
     // @TODO Wire up a --skip-sites-default option as well
-    'options' => array('latest' => 'Install the latest core and dist.'),
+    'options' => $release_options,
     'aliases' => array('sn'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
@@ -157,14 +162,16 @@ function drush_dslm_new() {
     return FALSE;
   }
 
-  // Pull the latest option
-  $use_latest = drush_get_option('latest', FALSE);
-
   // Set the dist and core, either supplied on the CLI, set with --latest, or will prompt
-  if ($use_latest) {
+  if (drush_get_option('latest', FALSE)) {
     $latest = $dslm->latest();
-    $core = $latest['core'];
-    $dist = $latest['dist'];
+    $core = $latest['release_core'];
+    $dist = $latest['release_dist'];
+  }
+  elseif (drush_get_option('dev', FALSE)) {
+    $latest = $dslm->latest();
+    $core = $latest['dev_core'];
+    $dist = $latest['dev_dist'];
   }
   else {
     $core = isset($args[2]) ? $args[2] : FALSE;

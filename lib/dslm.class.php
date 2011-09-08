@@ -75,7 +75,7 @@ class Dslm {
   public function getDists() {
     $out = array();
     foreach ($this->filesInDir($this->getBase() . "/dists/") as $dist) {
-      if ($this->is_dist_string($dist)) {
+      if ($this->isDistString($dist)) {
         $out[] = $dist;
       }
     }
@@ -725,7 +725,7 @@ class Dslm {
    * @return boolean
    *  Returns a boolean for validated or not
    */
-  protected function is_dist_string($s) {
+  protected function isDistString($s) {
     return preg_match('/([\d+])\.x\-[\d+]/', $s);
   }
 }

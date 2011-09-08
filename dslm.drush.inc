@@ -5,7 +5,7 @@
 
 DEFINE('DSLM_PATH', dirname(__FILE__));
 
-  require_once DSLM_PATH . '/lib/dslm.class.php';
+require_once DSLM_PATH . '/lib/dslm.class.php';
 
 /**
  * Implementation of hook_drush_help().
@@ -107,8 +107,13 @@ function drush_dslm_cores() {
   if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
   }
+
+  // Pull cores
+  $cores = $dslm->getCores();
+
+
   // Iterate through the cores array and print them out
-  foreach ($dslm->getCores() as $key => $core) {
+  foreach ($cores['all'] as $key => $core) {
     print $core . "\n";
   }
   return TRUE;
@@ -122,8 +127,13 @@ function drush_dslm_dists() {
   if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
   }
-  // Iterate through the cores array and print them out
-  foreach ($dslm->getDists() as $key => $dist) {
+
+  // Pull the dists
+  $dists = $dslm->getDists();
+
+
+  // Iterate through all the dists
+  foreach ($dists['all'] as $key => $dist) {
     print $dist . "\n";
   }
   return TRUE;
@@ -149,6 +159,7 @@ function drush_dslm_new() {
 
   // Pull the latest option
   $use_latest = drush_get_option('latest', FALSE);
+
   // Set the dist and core, either supplied on the CLI, set with --latest, or will prompt
   if ($use_latest) {
     $latest = $dslm->latest();

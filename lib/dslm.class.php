@@ -57,13 +57,31 @@ class Dslm {
    *  Returns an array or cores
    */
   public function getCores() {
-    $out = array();
+    $all = array();
+    $pre_releases = array();
+    $releases = array();
+
     foreach ($this->filesInDir($this->getBase() . "/cores/") as $core) {
       if ($this->isCoreString($core)) {
-        $out[] = $core;
+        $all[] = $core;
+
+        // Test for pre-releases
+        if (preg_match('/[dev|alph|beta|rc|pl]+[\.\d]*$/i', $core)) {
+          $pre_releases[] = $core;
+        }
+        else {
+          $releases[] = $core;
+        }
       }
     }
-    return $this->orderByVersion('core', $out);
+
+    $out = array(
+      'all' => $this->orderByVersion('core', $all),
+      'dev' => $this->orderByVersion('core', $pre_releases),
+      'release' => $this->orderByVersion('core', $releases),
+    );
+
+    return $out;
   }
 
   /**
@@ -73,27 +91,51 @@ class Dslm {
    *  Returns an array or dists
    */
   public function getDists() {
-    $out = array();
+    $all = array();
+    $pre_releases = array();
+    $releases = array();
+
     foreach ($this->filesInDir($this->getBase() . "/dists/") as $dist) {
       if ($this->isDistString($dist)) {
-        $out[] = $dist;
+        $all[] = $dist;
+
+        // Test for pre-releases
+        if (preg_match('/[dev|alph|beta|rc|pl]+[\.\d]*$/i', $dist)) {
+          $pre_releases[] = $dist;
+        }
+        else {
+          $releases[] = $dist;
+        }
       }
     }
-    return $this->orderByVersion('dist', $out);
+
+    $out = array(
+      'all' => $this->orderByVersion('dist', $all),
+      'dev' => $this->orderByVersion('dist', $pre_releases),
+      'release' => $this->orderByVersion('dist', $releases),
+    );
+
+    return $out;
   }
 
   /**
-   * Return the latest version core and dist
+   * Return the latest versions of core and dist
+   * broken up by core/dist, dev_core/dev_dist, and release_core/release_dist
    *
    * @return array
-   *   Returns the latest dist and core
+   *   Returns an array of the various latest versions
    */
   public function latest() {
-    $core = $this->orderByVersion('core', $this->getCores());
-    $dist = $this->orderByVersion('dist', $this->getDists());
+    $cores = $this->getCores();
+    $dists = $this->getDists();
+
     return array(
-      'core' => $core[count($core)-1],
-      'dist' => $dist[count($dist)-1],
+      'core' => $cores['all'][count($cores['all'])-1],
+      'dist' => $dists['all'][count($dists['all'])-1],
+      'dev_core' => $cores['dev'][count($cores['dev'])-1],
+      'dev_dist' => $dists['dev'][count($dists['dev'])-1],
+      'release_core' => $cores['release'][count($cores['release'])-1],
+      'release_dist' => $dists['release'][count($dists['release'])-1],
     );
   }
 
@@ -106,7 +148,8 @@ class Dslm {
    *  Returns a boolean for whether the core is valid or not
    */
   public function isValidCore($core) {
-    return in_array($core, $this->getCores());
+    $cores = $this->getCores();
+    return in_array($core, $cores['all']);
   }
 
   /**
@@ -118,7 +161,8 @@ class Dslm {
    *  Returns a boolean for whether the dist is valid or not
    */
   public function isValidDist($dist) {
-    return in_array($dist, $this->getDists());
+    $dists = $this->getDists();
+    return in_array($dist, $dists['all']);
   }
 
   /**
@@ -228,7 +272,7 @@ class Dslm {
     }
 
     // Get the core if it wasn't specified on the CLI
-    if (!$core || !in_array($core, $this->getCores())) {
+    if (!$core || !$this->isValidCore($core)) {
       $core = $this->chooseCore();
     }
 
@@ -284,7 +328,7 @@ class Dslm {
       return FALSE;
     }
     // Get the core if it wasn't specified on the CLI
-    if (!$dist || !in_array($dist, $this->getDists())) {
+    if (!$dist || !$this->isValidDist($dist)) {
       $dist = $this->chooseDist($filter);
     }
 
@@ -340,10 +384,6 @@ class Dslm {
   }
 
   /**
-   * Protected Methods
-   */
-
-  /**
    * Returns the dslm-base from $this->base
    *
    * @return string
@@ -353,6 +393,94 @@ class Dslm {
     // @todo replace all calls to $this->getBase() with a reference to the $this->base attribute
     // Base is now validated on instantiation, this is here for backward compatibility
     return $this->base;
+  }
+
+  /**
+   * Determine if we're MS Windows
+   *
+   * I was able to resist the urge not to name this method isBrokenOs()
+   * but not the urge to put the idea in this comment
+   *
+   * @return boolean
+   *  For whether we're windows or not.
+   */
+  public function isWindows() {
+    return preg_match('/^win/i',PHP_OS);
+  }
+
+  /**
+   * Takes an array of core or dist versions and sorts them by version number
+   *
+   * @param string $type
+   *  Should be core or dist to determine which we're sorting. Defaults to core
+   * @param array $v
+   *  An array containing the versions to sort
+   *
+   * @return array
+   *  Returns a sorted array by version
+   */
+  public function orderByVersion($type = 'core', $v) {
+    // The core_sort function
+    if (!function_exists("core_sort")) {
+      function core_sort($a, $b) {
+        $core_regex = '/(.+)\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
+        preg_match($core_regex, $a, $a_match);
+        preg_match($core_regex, $b, $b_match);
+        // If we don't have two matches, return 0
+        if (!$a_match && !$b_match) {
+          return 0;
+        }
+        // Version compare the two matches we have from the Drupal verisons
+        return version_compare($a_match[2],$b_match[2]);
+      }
+    }
+
+    // The dist sort function
+    if (!function_exists("dist_sort")) {
+      function dist_sort($a,$b) {
+        $a_match = str_replace('.x-', '.', $a);
+        $b_match = str_replace('.x-', '.', $b);
+        // If we don't have two matches, return 0
+        if (!$a_match && !$b_match) {
+          return 0;
+        }
+        // Version compare the two matches we have from the Drupal verisons
+        return version_compare($a_match,$b_match);
+      }
+    }
+
+    // Sort the version array with our custom compare function
+    $sort_function = ($type == 'core') ? "core_sort" : "dist_sort";
+    usort($v, $sort_function);
+    return $v;
+  }
+
+  /**
+   * Core validation
+   *
+   * @param string $s
+   *  The core string to validate
+   *
+   * @return boolean
+   *  Returns a boolean for validated or not
+   */
+  public function isCoreString($s) {
+    //return preg_match('/(.+)\-[\d+]\./', $s);
+    return preg_match('/(.+)\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i', $s);
+  }
+
+  /**
+   * Distribution validation
+   *
+   * @param string $s
+   *  The dist string to validate
+   *
+   * @return boolean
+   *  Returns a boolean for validated or not
+   */
+  public function isDistString($s) {
+    //return preg_match('/([\d+])\.x\-[\d+]/', $s);
+    return preg_match('/(\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i', $s);
   }
 
   /**
@@ -501,7 +629,9 @@ class Dslm {
    */
   protected function chooseCore() {
     // Pull our cores
-    $cores = $this->getCores();
+    $get_cores = $this->getCores();
+    $cores = $get_cores['all'];
+
     // Present the cores to the user
     foreach ($cores as $k => $core) {
       print $k+1 . ". $core\n";
@@ -525,7 +655,9 @@ class Dslm {
    */
   protected function chooseDist($version_check = FALSE) {
     // Pull our distributions
-    $dists = $this->getDists();
+    $get_dists = $this->getDists();
+    $dists = $get_dists['all'];
+
     // Version filtering
     if ($version_check) {
       preg_match('/-(\d+)\./', $version_check, $version_match);
@@ -642,90 +774,5 @@ class Dslm {
       }
     }
     return $path. $fix;
-  }
-
-  /**
-   * Determine if we're MS Windows
-   *
-   * I was able to resist the urge not to name this method isBrokenOs()
-   * but not the urge to put the idea in this comment
-   *
-   * @return boolean
-   *  For whether we're windows or not.
-   */
-  protected function isWindows() {
-    return preg_match('/^win/i',PHP_OS);
-  }
-
-  /**
-   * Takes an array of core or dist versions and sorts them by version number
-   *
-   * @param string $type
-   *  Should be core or dist to determine which we're sorting. Defaults to core
-   * @param array $v
-   *  An array containing the versions to sort
-   *
-   * @return array
-   *  Returns a sorted array by version
-   */
-  protected function orderByVersion($type = 'core', $v) {
-    // The core_sort function
-    if (!function_exists("core_sort")) {
-      function core_sort($a,$b) {
-        preg_match('/-([\d|\.]+)/', $a, $a_match);
-        preg_match('/-([\d|\.]+)/', $b, $b_match);
-        // If we don't have two matches, return 0
-        if (!$a_match && !$b_match) {
-          return 0;
-        }
-        // Version compare the two matches we have from the Drupal verisons
-        return version_compare($a_match[1],$b_match[1]);
-      }
-    }
-
-    // The dist sort function
-    if (!function_exists("dist_sort")) {
-      function dist_sort($a,$b) {
-        $a_match = str_replace('.x-', '.', $a);
-        $b_match = str_replace('.x-', '.', $b);
-        // If we don't have two matches, return 0
-        if (!$a_match && !$b_match) {
-          return 0;
-        }
-        // Version compare the two matches we have from the Drupal verisons
-        return version_compare($a_match,$b_match);
-      }
-    }
-
-    // Sort the version array with our custom compare function
-    $sort_function = ($type=='core') ? "core_sort" : "dist_sort";
-    usort($v, $sort_function);
-    return $v;
-  }
-
-  /**
-   * Core validation
-   *
-   * @param string $s
-   *  The core string to validate
-   *
-   * @return boolean
-   *  Returns a boolean for validated or not
-   */
-  protected function isCoreString($s) {
-    return preg_match('/(.+)\-[\d+]\./', $s);
-  }
-
-  /**
-   * Distribution validation
-   *
-   * @param string $s
-   *  The dist string to validate
-   *
-   * @return boolean
-   *  Returns a boolean for validated or not
-   */
-  protected function isDistString($s) {
-    return preg_match('/([\d+])\.x\-[\d+]/', $s);
   }
 }

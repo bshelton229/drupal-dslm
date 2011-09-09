@@ -13,7 +13,7 @@ require_once DSLM_PATH . '/lib/dslm.class.php';
 function dslm_drush_help($section) {
   switch ($section) {
     case 'meta:dslm:title':
-      return dt('DSLM (Drupl Symlink Manager)');
+      return dt('DSLM (Drupal Symlink Manager)');
     case 'meta:dslm:summary':
       return dt('Drupal symlink management Drush commands.');
   }

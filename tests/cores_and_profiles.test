@@ -10,7 +10,10 @@ class TestCoresAndDists extends UnitTestCase {
    */
   function testGetCoresAndDists() {
     $dslm = new Dslm($_ENV['DSLM_BASE']);
-    $this->assertTrue(is_array($dslm->getCores()));
-    $this->assertTrue(is_array($dslm->getDists()));
+    $cores = $dslm->getCores();
+    $profiles = $dslm->getProfiles();
+    
+    $this->assertTrue(is_array($cores) && !empty($cores));
+    $this->assertTrue(is_array($profiles) && !empty($profiles));
   }
 }

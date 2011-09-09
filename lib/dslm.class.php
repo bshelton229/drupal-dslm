@@ -26,6 +26,20 @@ class Dslm {
   protected $skip_dir_check = FALSE;
 
   /**
+   * Define a core parsing regular expression
+   *
+   * @var string
+   */
+  protected $core_regex = '/(.+)\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
+
+  /**
+   * Define a profile parsing regular expression
+   *
+   * @var string
+   */
+  protected $profile_regex = '/(\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
+
+  /**
    * DSLM constructor
    *
    * @param $base
@@ -57,13 +71,31 @@ class Dslm {
    *  Returns an array or cores
    */
   public function getCores() {
-    $out = array();
+    $all = array();
+    $pre_releases = array();
+    $releases = array();
+
     foreach ($this->filesInDir($this->getBase() . "/cores/") as $core) {
       if ($this->isCoreString($core)) {
-        $out[] = $core;
+        $all[] = $core;
+
+        // Test for pre-releases
+        if (preg_match('/[dev|alph|beta|rc|pl]+[\.\d]*$/i', $core)) {
+          $pre_releases[] = $core;
+        }
+        else {
+          $releases[] = $core;
+        }
       }
     }
-    return $this->orderByVersion('core', $out);
+
+    $out = array(
+      'all' => $this->orderByVersion('core', $all),
+      'dev' => $this->orderByVersion('core', $pre_releases),
+      'release' => $this->orderByVersion('core', $releases),
+    );
+
+    return $out;
   }
 
   /**
@@ -73,27 +105,51 @@ class Dslm {
    *  Returns an array of profiles
    */
   public function getProfiles() {
-    $out = array();
+    $all = array();
+    $pre_releases = array();
+    $releases = array();
+
     foreach ($this->filesInDir($this->getBase() . "/profiles/") as $profile) {
-      if ($this->is_profile_string($profile)) {
-        $out[] = $profile;
+      if ($this->isProfileString($profile)) {
+        $all[] = $profile;
+
+        // Test for pre-releases
+        if (preg_match('/[dev|alph|beta|rc|pl]+[\.\d]*$/i', $profile)) {
+          $pre_releases[] = $profile;
+        }
+        else {
+          $releases[] = $profile;
+        }
       }
     }
-    return $this->orderByVersion('profile', $out);
+
+    $out = array(
+      'all' => $this->orderByVersion('profile', $all),
+      'dev' => $this->orderByVersion('profile', $pre_releases),
+      'release' => $this->orderByVersion('profile', $releases),
+    );
+
+    return $out;
   }
 
   /**
-   * Return the latest version core and profile
+   * Return the latest versions of core and profile 
+   * broken up by core/profile, dev_core/dev_profile, and release_core/release_profile
    *
    * @return array
-   *   Returns the latest profile and core
+   *   Returns an array of the various latest versions
    */
   public function latest() {
-    $core = $this->orderByVersion('core', $this->getCores());
-    $profile = $this->orderByVersion('profile', $this->getprofiles());
+    $cores = $this->getCores();
+    $profiles = $this->getProfiles();
+
     return array(
-      'core' => $core[count($core)-1],
-      'profile' => $profile[count($profile)-1],
+      'core' => $cores['all'][count($cores['all'])-1],
+      'profile' => $profiles['all'][count($profiles['all'])-1],
+      'dev_core' => $cores['dev'][count($cores['dev'])-1],
+      'dev_profile' => $profiles['dev'][count($profiles['dev'])-1],
+      'release_core' => $cores['release'][count($cores['release'])-1],
+      'release_profile' => $profiles['release'][count($profiles['release'])-1],
     );
   }
 
@@ -106,7 +162,8 @@ class Dslm {
    *  Returns a boolean for whether the core is valid or not
    */
   public function isValidCore($core) {
-    return in_array($core, $this->getCores());
+    $cores = $this->getCores();
+    return in_array($core, $cores['all']);
   }
 
   /**
@@ -117,8 +174,9 @@ class Dslm {
    * @return boolean
    *  Returns a boolean for whether the profile is valid or not
    */
-  public function isValidprofile($profile) {
-    return in_array($profile, $this->getprofiles());
+  public function isValidProfile($profile) {
+    $profiles = $this->getProfiles();
+    return in_array($profile, $profiles['all']);
   }
 
   /**
@@ -228,7 +286,7 @@ class Dslm {
     }
 
     // Get the core if it wasn't specified on the CLI
-    if (!$core || !in_array($core, $this->getCores())) {
+    if (!$core || !$this->isValidCore($core)) {
       $core = $this->chooseCore();
     }
 
@@ -279,9 +337,10 @@ class Dslm {
       $this->last_error = 'Invalid Drupal Directory';
       return FALSE;
     }
+    
     // Get the profile if it wasn't specified on the CLI
-    if (!$profile || !in_array($profile, $this->getprofiles())) {
-      $profile = $this->chooseprofile($filter);
+    if (!$profile || !$this->isValidProfile($profile)) {
+      $profile = $this->chooseProfile($filter);
     }
     
     $source_profile_dir = $this->getBase() . "/profiles/" . $profile;
@@ -333,10 +392,6 @@ class Dslm {
   }
 
   /**
-   * Protected Methods
-   */
-
-  /**
    * Returns the dslm-base from $this->base
    *
    * @return string
@@ -346,6 +401,73 @@ class Dslm {
     // @todo replace all calls to $this->getBase() with a reference to the $this->base attribute
     // Base is now validated on instantiation, this is here for backward compatibility
     return $this->base;
+  }
+
+  /**
+   * Takes an array of core or profile versions and sorts them by version number
+   *
+   * @param string $type
+   *  Should be core or profile to determine which we're sorting. Defaults to core
+   * @param array $v
+   *  An array containing the versions to sort
+   *
+   * @return array
+   *  Returns a sorted array by version
+   */
+  public function orderByVersion($type = 'core', $v) {
+    // Initialize an array to hold keys for what to sort and values for the initial values
+    $for_sorting = array();
+
+    // Decide what we're sorting to get the sortable string as the key of $for_sorting
+    if ($type == 'core') {
+      foreach ($v as $version) {
+        if (preg_match($this->core_regex, $version, $parsed)) {
+          $for_sorting[strtolower($parsed[2])] = $version;
+        }
+      }
+    }
+    else {
+      foreach ($v as $version) {
+        $parsed = str_replace('.x-', '.', $version);
+        $for_sorting[strtolower($parsed)] = $version;
+      }
+    }
+
+    // Sort by the keys we put in place using the version_compare function
+    uksort($for_sorting, 'version_compare');
+
+    // Initialize the out array to restore an array of just original strings in the new order for return
+    $out = array();
+    foreach ($for_sorting as $k => $value) {
+      $out[] = $value;
+    }
+    return $out;
+  }
+
+  /**
+   * Core validation
+   *
+   * @param string $s
+   *  The core string to validate
+   *
+   * @return boolean
+   *  Returns a boolean for validated or not
+   */
+  public function isCoreString($s) {
+    return preg_match($this->core_regex, $s);
+  }
+
+  /**
+   * Profile validation
+   *
+   * @param string $s
+   *  The profile string to validate
+   *
+   * @return boolean
+   *  Returns a boolean for validated or not
+   */
+  public function isProfileString($s) {
+    return preg_match($this->profile_regex, $s);
   }
 
   /**
@@ -494,7 +616,9 @@ class Dslm {
    */
   protected function chooseCore() {
     // Pull our cores
-    $cores = $this->getCores();
+    $get_cores = $this->getCores();
+    $cores = $get_cores['all'];
+
     // Present the cores to the user
     foreach ($cores as $k => $core) {
       print $k+1 . ". $core\n";
@@ -516,9 +640,11 @@ class Dslm {
    * @return string
    *  Returns the user chosen profile
    */
-  protected function chooseprofile($version_check = FALSE) {
-    // Pull our profileributions
-    $profiles = $this->getprofiles();
+  protected function chooseProfile($version_check = FALSE) {
+    // Pull our profiles
+    $get_profiles = $this->getProfiles();
+    $profiles = $get_profiles['all'];
+    
     // Version filtering
     if ($version_check) {
       preg_match('/-(\d+)\./', $version_check, $version_match);
@@ -648,77 +774,5 @@ class Dslm {
    */
   protected function isWindows() {
     return preg_match('/^win/i',PHP_OS);
-  }
-
-  /**
-   * Takes an array of core or profile versions and sorts them by version number
-   *
-   * @param string $type
-   *  Should be core or profile to determine which we're sorting. Defaults to core
-   * @param array $v
-   *  An array containing the versions to sort
-   *
-   * @return array
-   *  Returns a sorted array by version
-   */
-  protected function orderByVersion($type = 'core', $v) {
-    // The core_sort function
-    if (!function_exists("core_sort")) {
-      function core_sort($a,$b) {
-        preg_match('/-([\d|\.]+)/', $a, $a_match);
-        preg_match('/-([\d|\.]+)/', $b, $b_match);
-        // If we don't have two matches, return 0
-        if (!$a_match && !$b_match) {
-          return 0;
-        }
-        // Version compare the two matches we have from the Drupal verisons
-        return version_compare($a_match[1],$b_match[1]);
-      }
-    }
-
-    // The profile sort function
-    if (!function_exists("profile_sort")) {
-      function profile_sort($a,$b) {
-        $a_match = str_replace('.x-', '.', $a);
-        $b_match = str_replace('.x-', '.', $b);
-        // If we don't have two matches, return 0
-        if (!$a_match && !$b_match) {
-          return 0;
-        }
-        // Version compare the two matches we have from the Drupal verisons
-        return version_compare($a_match,$b_match);
-      }
-    }
-
-    // Sort the version array with our custom compare function
-    $sort_function = ($type=='core') ? "core_sort" : "profile_sort";
-    usort($v, $sort_function);
-    return $v;
-  }
-
-  /**
-   * Core validation
-   *
-   * @param string $s
-   *  The core string to validate
-   *
-   * @return boolean
-   *  Returns a boolean for validated or not
-   */
-  protected function isCoreString($s) {
-    return preg_match('/(.+)\-[\d+]\./', $s);
-  }
-
-  /**
-   * profile validation
-   *
-   * @param string $s
-   *  The profile string to validate
-   *
-   * @return boolean
-   *  Returns a boolean for validated or not
-   */
-  protected function is_profile_string($s) {
-    return preg_match('/([\d+])\.x\-[\d+]/', $s);
   }
 }

@@ -5,7 +5,7 @@
 
 DEFINE('DSLM_PATH', dirname(__FILE__));
 
-  require_once DSLM_PATH . '/lib/dslm.class.php';
+require_once DSLM_PATH . '/lib/dslm.class.php';
 
 /**
  * Implementation of hook_drush_help().
@@ -28,6 +28,11 @@ function dslm_drush_command() {
   // Global dslm arguments
   $arguments = array(
     'dslm-base' => 'Change the dslm base directory'
+  );
+
+  $release_options = array(
+    'latest' => 'Use the latest release(stable) version of core and/or profile.',
+    'dev' => 'Use the latest dev version of core and/or profile.',
   );
 
   $items['dslm-info'] = array(
@@ -55,7 +60,7 @@ function dslm_drush_command() {
     'description' => 'DSLM  New Site',
     'arguments' => $arguments,
     // @TODO Wire up a --skip-sites-default option as well
-    'options' => array('latest' => 'Install the latest core and profile.'),
+    'options' => $release_options,
     'aliases' => array('sn'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
@@ -107,8 +112,13 @@ function drush_dslm_cores() {
   if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
   }
+
+  // Pull cores
+  $cores = $dslm->getCores();
+
+
   // Iterate through the cores array and print them out
-  foreach ($dslm->getCores() as $key => $core) {
+  foreach ($cores['all'] as $key => $core) {
     print $core . "\n";
   }
   return TRUE;
@@ -122,9 +132,13 @@ function drush_dslm_profiles() {
   if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
   }
-  // Iterate through the cores array and print them out
-  foreach ($dslm->getProfiles() as $key => $profile) {
-    print $profiles . "\n";
+  
+  // Pull the profiles
+  $profiles = $dslm->getProfiles();
+  
+  // Iterate through the profiles array and print them out
+  foreach ($profiles['all'] as $key => $profile) {
+    print $profile . "\n";
   }
   return TRUE;
 }
@@ -147,13 +161,16 @@ function drush_dslm_new() {
     return FALSE;
   }
 
-  // Pull the latest option
-  $use_latest = drush_get_option('latest', FALSE);
   // Set the profile and core, either supplied on the CLI, set with --latest, or will prompt
-  if ($use_latest) {
+  if (drush_get_option('latest', FALSE)) {
     $latest = $dslm->latest();
-    $core = $latest['core'];
-    $profile = $latest['profile'];
+    $core = $latest['release_core'];
+    $profile = $latest['release_profile'];
+  }
+  elseif (drush_get_option('dev', FALSE)) {
+    $latest = $dslm->latest();
+    $core = $latest['dev_core'];
+    $profile = $latest['dev_profile'];
   }
   else {
     $core = isset($args[2]) ? $args[2] : FALSE;

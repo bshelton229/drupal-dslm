@@ -26,6 +26,20 @@ class Dslm {
   protected $skip_dir_check = FALSE;
 
   /**
+   * Define a core parsing regular expression
+   *
+   * @var string
+   */
+  protected $core_regex = '/(.+)\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
+
+  /**
+   * Define a dist parsing regular expression
+   *
+   * @var string
+   */
+  protected $dist_regex = '/(\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
+
+  /**
    * DSLM constructor
    *
    * @param $base
@@ -420,39 +434,33 @@ class Dslm {
    *  Returns a sorted array by version
    */
   public function orderByVersion($type = 'core', $v) {
-    // The core_sort function
-    if (!function_exists("core_sort")) {
-      function core_sort($a, $b) {
-        $core_regex = '/(.+)\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
-        preg_match($core_regex, $a, $a_match);
-        preg_match($core_regex, $b, $b_match);
-        // If we don't have two matches, return 0
-        if (!$a_match && !$b_match) {
-          return 0;
+    // Initialize an array to hold keys for what to sort and values for the initial values
+    $for_sorting = array();
+
+    // Decide what we're sorting to get the sortable string as the key of $for_sorting
+    if ($type == 'core') {
+      foreach ($v as $version) {
+        if (preg_match($this->core_regex, $version, $parsed)) {
+          $for_sorting[strtolower($parsed[2])] = $version;
         }
-        // Version compare the two matches we have from the Drupal verisons
-        return version_compare($a_match[2],$b_match[2]);
+      }
+    }
+    else {
+      foreach ($v as $version) {
+        $parsed = str_replace('.x-', '.', $version);
+        $for_sorting[strtolower($parsed)] = $version;
       }
     }
 
-    // The dist sort function
-    if (!function_exists("dist_sort")) {
-      function dist_sort($a,$b) {
-        $a_match = str_replace('.x-', '.', $a);
-        $b_match = str_replace('.x-', '.', $b);
-        // If we don't have two matches, return 0
-        if (!$a_match && !$b_match) {
-          return 0;
-        }
-        // Version compare the two matches we have from the Drupal verisons
-        return version_compare($a_match,$b_match);
-      }
-    }
+    // Sort by the keys we put in place using the version_compare function
+    uksort($for_sorting, 'version_compare');
 
-    // Sort the version array with our custom compare function
-    $sort_function = ($type == 'core') ? "core_sort" : "dist_sort";
-    usort($v, $sort_function);
-    return $v;
+    // Initialize the out array to restore an array of just original strings in the new order for return
+    $out = array();
+    foreach ($for_sorting as $k => $value) {
+      $out[] = $value;
+    }
+    return $out;
   }
 
   /**
@@ -465,8 +473,7 @@ class Dslm {
    *  Returns a boolean for validated or not
    */
   public function isCoreString($s) {
-    //return preg_match('/(.+)\-[\d+]\./', $s);
-    return preg_match('/(.+)\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i', $s);
+    return preg_match($this->core_regex, $s);
   }
 
   /**
@@ -479,8 +486,7 @@ class Dslm {
    *  Returns a boolean for validated or not
    */
   public function isDistString($s) {
-    //return preg_match('/([\d+])\.x\-[\d+]/', $s);
-    return preg_match('/(\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i', $s);
+    return preg_match($this->dist_regex, $s);
   }
 
   /**

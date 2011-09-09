@@ -100,7 +100,7 @@ function drush_dslm_info() {
   if (!$info = $dslm->siteInfo()) {
     return drush_set_error($dslm->lastError());
   }
-  print "Core: {$info['core']} (Dist: {$info['dist']})\n";
+  drush_log(dt('Core: !core (Dist: !dist)', array('!core' => $info['core'], '!dist' => $info['dist'])), 'ok');
   return TRUE;
 }
 
@@ -119,8 +119,9 @@ function drush_dslm_cores() {
 
   // Iterate through the cores array and print them out
   foreach ($cores['all'] as $key => $core) {
-    print $core . "\n";
+    $out .= $core . "\n";
   }
+  drush_log(trim($out), 'ok');
   return TRUE;
 }
 
@@ -139,8 +140,9 @@ function drush_dslm_dists() {
 
   // Iterate through all the dists
   foreach ($dists['all'] as $key => $dist) {
-    print $dist . "\n";
+    $out .= $dist . "\n";
   }
+  drush_log(trim($out), 'ok');
   return TRUE;
 }
 
@@ -182,6 +184,7 @@ function drush_dslm_new() {
     return drush_set_error($dslm->lastError());
   }
   else {
+    drush_log(dt('Your site has been linked in !dir', array('!dir' => $site_dest)), 'ok');
     return TRUE;
   }
 }
@@ -204,6 +207,9 @@ function drush_dslm_switch() {
     return drush_set_error($dslm->lastError());
   }
   else {
+    // @todo: get $dslm->newSite to return validated switch information rather than TRUE
+    //  for reporting here.
+    drush_log('The links have been switched', 'ok');
     return TRUE;
   }
 }
@@ -224,6 +230,9 @@ function drush_dslm_switch_core() {
     return drush_set_error($dslm->lastError());
   }
   else {
+    // @todo: get $dslm->newSite to return validated switch information rather than TRUE
+    //  for reporting here.
+    drush_log(dt('The core has been switched'), 'ok');
     return TRUE;
   }
 }
@@ -248,6 +257,9 @@ function drush_dslm_switch_dist() {
     return drush_set_error($dslm->lastError());
   }
   else {
+    // @todo: get $dslm->newSite to return validated switch information rather than TRUE
+    //  for reporting here.
+    drush_log(dt('The dist has been switched'), 'ok');
     return TRUE;
   }
 }

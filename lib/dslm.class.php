@@ -450,11 +450,16 @@ class Dslm {
    * @param string $s
    *  The core string to validate
    *
-   * @return boolean
-   *  Returns a boolean for validated or not
+   * @return array
+   *  Returns an array from preg_match or FALSE
    */
   public function isCoreString($s) {
-    return preg_match($this->core_regex, $s);
+    if (preg_match($this->core_regex, $s, $matches)) {
+      return $matches;
+    }
+    else {
+      return FALSE;
+    }
   }
 
   /**
@@ -463,11 +468,16 @@ class Dslm {
    * @param string $s
    *  The profile string to validate
    *
-   * @return boolean
-   *  Returns a boolean for validated or not
+   * @return array
+   *  Returns an array from preg_match or FALSE
    */
   public function isProfileString($s) {
-    return preg_match($this->profile_regex, $s);
+    if (preg_match($this->profile_regex, $s, $matches)) {
+      return $matches;
+    }
+    else {
+      return FALSE;
+    }
   }
 
   /**

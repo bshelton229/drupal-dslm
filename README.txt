@@ -43,16 +43,24 @@ the cli switch, then in your drushrc.php and finally for an enviro var.
 COMMANDS
 --------
 drush dslm-new [site-directory] [dist] [core]
-Will create a new site prompting you to choose which core and distribution it should be linked to. If you pass the --latest flag, the latest core and distribution will automatically be chosen. You may optionally pass a valid core and dist on the command line to run non-interactively.
+Will create a new site prompting you to choose which core and distribution 
+it should be linked to. If you pass the --latest flag, the latest core and
+distribution will automatically be chosen. You may optionally pass a valid
+core and dist on the command line to run non-interactively.
 
 drush dslm-info
-Will display the current core and distribution linked to the directory you're in.
+Will display the current core and distribution linked to the directory
+you're in.
 
 drush dslm-switch [core] [dist]
-Will prompt you to switch the core and distribution. If you specify a valid core and dist on the command line, they will be used, otherwise, you will be prompted.
+Will prompt you to switch the core and distribution. If you specify a valid
+core and dist on the command line, they will be used, otherwise, you will
+be prompted.
 
 drush dslm-switch-core [core]
-Will prompt you to switch the core. If you specify a valid core on the command line, it will be used, otherwise, you will be prompted.
+Will prompt you to switch the core. If you specify a valid core on the
+command line, it will be used, otherwise, you will be prompted.
 
 drush dslm-switch-dist [dist]
-Will prompt you to switch the dist. If you specify a valid dist, it will be used, otherwise, you will be prompted.
+Will prompt you to switch the dist. If you specify a valid dist, it will be
+used, otherwise, you will be prompted.

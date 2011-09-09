@@ -44,8 +44,8 @@ function dslm_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
-  $items['dslm-dists'] = array(
-    'description' => 'DSLM  Show Cores',
+  $items['dslm-profiles'] = array(
+    'description' => 'DSLM  Show Profiles',
     'arguments' => $arguments,
     'aliases' => array('sd'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
@@ -55,13 +55,13 @@ function dslm_drush_command() {
     'description' => 'DSLM  New Site',
     'arguments' => $arguments,
     // @TODO Wire up a --skip-sites-default option as well
-    'options' => array('latest' => 'Install the latest core and dist.'),
+    'options' => array('latest' => 'Install the latest core and profile.'),
     'aliases' => array('sn'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
   $items['dslm-switch'] = array(
-    'description' => 'DSLM  Switch Core and Dist',
+    'description' => 'DSLM  Switch Core and profile',
     'arguments' => $arguments,
     'aliases' => array('ss'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
@@ -74,8 +74,8 @@ function dslm_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
   );
 
-  $items['dslm-switch-dist'] = array(
-    'description' => 'DSLM  Switch Dist',
+  $items['dslm-switch-profile'] = array(
+    'description' => 'DSLM  Switch Profile',
     'arguments' => $arguments,
     'aliases' => array('ssd'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
@@ -95,7 +95,7 @@ function drush_dslm_info() {
   if (!$info = $dslm->siteInfo()) {
     return drush_set_error($dslm->lastError());
   }
-  print "Core: {$info['core']} (Dist: {$info['dist']})\n";
+  print "Core: {$info['core']} (Profile: {$info['profile']})\n";
   return TRUE;
 }
 
@@ -115,16 +115,16 @@ function drush_dslm_cores() {
 }
 
 /**
- * Command callback. Displays a list of available dists.
+ * Command callback. Displays a list of available profiles.
  */
-function drush_dslm_dists() {
+function drush_dslm_profiles() {
   // Bootstrap dslm, this grabs the instantiated and configured dslm library object
   if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
   }
   // Iterate through the cores array and print them out
-  foreach ($dslm->getDists() as $key => $dist) {
-    print $dist . "\n";
+  foreach ($dslm->getProfiles() as $key => $profile) {
+    print $profiles . "\n";
   }
   return TRUE;
 }
@@ -149,18 +149,18 @@ function drush_dslm_new() {
 
   // Pull the latest option
   $use_latest = drush_get_option('latest', FALSE);
-  // Set the dist and core, either supplied on the CLI, set with --latest, or will prompt
+  // Set the profile and core, either supplied on the CLI, set with --latest, or will prompt
   if ($use_latest) {
     $latest = $dslm->latest();
     $core = $latest['core'];
-    $dist = $latest['dist'];
+    $profile = $latest['profile'];
   }
   else {
     $core = isset($args[2]) ? $args[2] : FALSE;
-    $dist = isset($args[3]) ? $args[3] : FALSE;
+    $profile = isset($args[3]) ? $args[3] : FALSE;
   }
 
-  if (!$res = $dslm->newSite($site_dest, $core, $dist)) {
+  if (!$res = $dslm->newSite($site_dest, $core, $profile)) {
     return drush_set_error($dslm->lastError());
   }
   else {
@@ -169,19 +169,19 @@ function drush_dslm_new() {
 }
 
 /**
- * Command callback. Prompts the user to switch the dslm dist and core.
+ * Command callback. Prompts the user to switch the dslm profile and core.
  */
 function drush_dslm_switch() {
   $args = drush_get_arguments();
   $core = isset($args[1]) ? $args[1] : FALSE;
-  $dist = isset($args[2]) ? $args[2] : FALSE;
+  $profile = isset($args[2]) ? $args[2] : FALSE;
 
   // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
   if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
   }
 
-  $run = $dslm->newSite(getcwd(), $core, $dist, TRUE);
+  $run = $dslm->newSite(getcwd(), $core, $profile, TRUE);
   if (!$run) {
     return drush_set_error($dslm->lastError());
   }
@@ -211,11 +211,11 @@ function drush_dslm_switch_core() {
 }
 
 /**
- * Command callback. Prompts the user to switch the dslm dist.
+ * Command callback. Prompts the user to switch the dslm profile.
  */
-function drush_dslm_switch_dist() {
+function drush_dslm_switch_profile() {
   $args = drush_get_arguments();
-  $dist = isset($args[1]) ? $args[1] : FALSE;
+  $profile = isset($args[1]) ? $args[1] : FALSE;
 
   // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
   if (!$dslm = _dslm_bootstrap()) {
@@ -225,7 +225,7 @@ function drush_dslm_switch_dist() {
   // Pull the current site info for core filtering
   $site_info = $dslm->siteInfo(getcwd());
   // Run the switch
-  $run = $dslm->switchDist(getcwd(), $dist, FALSE, $site_info['core']);
+  $run = $dslm->switchprofile(getcwd(), $profile, FALSE, $site_info['core']);
   if (!$run) {
     return drush_set_error($dslm->lastError());
   }

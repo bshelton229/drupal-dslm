@@ -29,7 +29,7 @@ class Dslm {
    * DSLM constructor
    *
    * @param $base
-   *  The base path containing the dists and cores
+   *  The base path containing the profiles and cores
    */
   public function __construct($base) {
     // Validate the base
@@ -67,33 +67,33 @@ class Dslm {
   }
 
   /**
-   * Get the dists
+   * Get the profiles 
    *
    * @return array
-   *  Returns an array or dists
+   *  Returns an array of profiles
    */
-  public function getDists() {
+  public function getProfiles() {
     $out = array();
-    foreach ($this->filesInDir($this->getBase() . "/dists/") as $dist) {
-      if ($this->is_dist_string($dist)) {
-        $out[] = $dist;
+    foreach ($this->filesInDir($this->getBase() . "/profiles/") as $profile) {
+      if ($this->is_profile_string($profile)) {
+        $out[] = $profile;
       }
     }
-    return $this->orderByVersion('dist', $out);
+    return $this->orderByVersion('profile', $out);
   }
 
   /**
-   * Return the latest version core and dist
+   * Return the latest version core and profile
    *
    * @return array
-   *   Returns the latest dist and core
+   *   Returns the latest profile and core
    */
   public function latest() {
     $core = $this->orderByVersion('core', $this->getCores());
-    $dist = $this->orderByVersion('dist', $this->getDists());
+    $profile = $this->orderByVersion('profile', $this->getprofiles());
     return array(
       'core' => $core[count($core)-1],
-      'dist' => $dist[count($dist)-1],
+      'profile' => $profile[count($profile)-1],
     );
   }
 
@@ -110,15 +110,15 @@ class Dslm {
   }
 
   /**
-   * Check dist
+   * Check profile
    *
-   * @param string $dist
-   *  The dist to check
+   * @param string $profile
+   *  The profile to check
    * @return boolean
-   *  Returns a boolean for whether the dist is valid or not
+   *  Returns a boolean for whether the profile is valid or not
    */
-  public function isValidDist($dist) {
-    return in_array($dist, $this->getDists());
+  public function isValidprofile($profile) {
+    return in_array($profile, $this->getprofiles());
   }
 
   /**
@@ -127,7 +127,7 @@ class Dslm {
    * @param boolean $d
    *  The directory to use as the base, this will default to getcwd()
    * @return array
-   *  Returns an array containing the current dist and core or FALSE
+   *  Returns an array containing the current profile and core or FALSE
    */
   public function siteInfo($d = FALSE) {
     if (!$d) {
@@ -138,14 +138,14 @@ class Dslm {
       return FALSE;
     }
     $core = $this->firstLinkDirname($d);
-    $dist = $this->firstLinkBasename($d.'/sites');
-    if (!$core || !$dist) {
+    $profile = $this->firstLinkDirname($d.'/profiles');
+    if (!$core || !$profile) {
       $this->last_error = 'Invalid symlinked site';
       return FALSE;
     }
     $out = array(
       'core' => $core,
-      'dist' => $dist,
+      'profile' => $profile,
     );
     return $out;
   }
@@ -157,15 +157,15 @@ class Dslm {
    *  The destination directory for the new site
    * @param string $core
    *  The core to use
-   * @param string $dist
-   *  The dist to use
+   * @param string $profile
+   *  The profile to use
    * @param boolean $force
    *  Whether or not to force the site creation
    *
    * @return boolean
    *  Returns boolean
    */
-  public function newSite($dest_dir, $core = FALSE, $dist = FALSE, $force = FALSE) {
+  public function newSite($dest_dir, $core = FALSE, $profile = FALSE, $force = FALSE) {
     // Load the base
     $base = $this->getBase();
 
@@ -176,9 +176,9 @@ class Dslm {
       return FALSE;
     }
 
-    // Run the dist and core switches
+    // Run the profile and core switches
     $core = $this->switchCore($dest_dir, $core, TRUE);
-    $dist = $this->switchDist($dest_dir, $dist, TRUE, $core);
+    $profile = $this->switchprofile($dest_dir, $profile, TRUE, $core);
 
     // Create sites/default structure
     $dest_sites_default = "$dest_dir/sites/default";
@@ -243,10 +243,6 @@ class Dslm {
     $source_dir = "$base/cores/$core";
     $this->removeCoreLinks($dest_dir);
     foreach ($this->filesInDir($source_dir) as $f) {
-      // Never link sites
-      if ($f == "sites") {
-        continue;
-      }
       $relpath = $this->relpath($source_dir, $dest_dir);
       symlink("$relpath/$f", "$dest_dir/$f");
     }
@@ -254,12 +250,12 @@ class Dslm {
   }
 
   /**
-   * Switch the distribution
+   * Switch the profile
    *
    * @param string $dest_dir
-   *  The destination dir to switch the dist for.
-   * @param string $dist
-   *  The dist to switch to.
+   *  The destination dir to switch the profile for.
+   * @param string $profile
+   *  The profile to switch to.
    * @param boolean $force
    *  Whether or not to force the switch
    * @param string $filter
@@ -268,7 +264,7 @@ class Dslm {
    * @return string
    *  Returns the core it switched to.
    */
-  public function switchDist($dest_dir = FALSE, $dist = FALSE, $force = FALSE, $filter = FALSE) {
+  public function switchprofile($dest_dir = FALSE, $profile = FALSE, $force = FALSE, $filter = FALSE) {
     // Pull the base
     $base = $this->getBase();
     // Handle destination directory
@@ -283,51 +279,48 @@ class Dslm {
       $this->last_error = 'Invalid Drupal Directory';
       return FALSE;
     }
-    // Get the core if it wasn't specified on the CLI
-    if (!$dist || !in_array($dist, $this->getDists())) {
-      $dist = $this->chooseDist($filter);
+    // Get the profile if it wasn't specified on the CLI
+    if (!$profile || !in_array($profile, $this->getprofiles())) {
+      $profile = $this->chooseprofile($filter);
     }
-
-    $source_dist_dir = $this->getBase() . "/dists/$dist";
-    $sites_dir = $dest_dir . '/sites';
-
-    // If the sites dir doesn't exist, create it
-    if (!file_exists($sites_dir)) { mkdir($sites_dir); }
+    
+    $source_profile_dir = $this->getBase() . "/profiles/" . $profile;
+    $profiles_dir = $dest_dir . '/profiles/';
 
     // Link it up
-    if (is_dir($sites_dir)) {
-      // Define the sites/all directory
-      $sites_all_dir = $sites_dir . "/" . "all";
-
-      // Remove the current sites/all directory if it's a link
-      if (is_link($sites_all_dir)) {
+    if (is_dir($profiles_dir)) {
+      // @TODO-matt: name of $profile.
+      $profile_dir = $profiles_dir . '/' . $profile;
+      
+      // Remove the current profiles/$profile directory if it's a link
+      if (is_link($profile_dir)) {
         if ($this->isWindows()) {
-          $target = readlink($sites_all_dir);
+          $target = readlink($profile_dir);
           if (is_dir($target)) {
-            rmdir($sites_all_dir);
+            rmdir($profile_dir);
           }
           else {
-            unlink($sites_all_dir);
+            unlink($profile_dir);
           }
         }
         else {
           // We're a sane operating system, just remove the link
-          unlink($sites_all_dir);
+          unlink($profile_dir);
         }
       }
       else {
-        // If there is a sites/all directory which isn't a symlink we're going to be safe and error out
-        if (file_exists($sites_all_dir)) {
-          $this->last_error = 'The sites/all directory already exists and is not a symlink';
+        // If there is a profiles/$profile directory which isn't a symlink we're going to be safe and error out
+        if (file_exists($profile_dir)) {
+          $this->last_error = 'The profile directory already exists and is not a symlink';
           return FALSE;
         }
       }
 
-      // Create our new symlink to the correct dist
-      $dist_link_path = $this->relpath($source_dist_dir, $sites_dir);
-      symlink($dist_link_path, $sites_all_dir);
+      // Create our new symlink to the correct profile
+      $profile_link_path = $this->relpath($source_profile_dir, $profiles_dir);
+      symlink($profile_link_path, $profile_dir);
     }
-    return $dist;
+    return $profile;
   }
 
   /**
@@ -366,7 +359,7 @@ class Dslm {
   protected function validateBase($base) {
     if (is_dir($base)) {
       $contents = $this->filesInDir($base);
-      $check_for = array('dists', 'cores');
+      $check_for = array('profiles', 'cores');
       foreach ($check_for as $check) {
         if (!in_array($check, $contents)) {
           return FALSE;
@@ -515,45 +508,45 @@ class Dslm {
   }
 
   /**
-   * Internal function to get the distribution through interactive input
+   * Internal function to get the profile through interactive input
    *
    * @param string $version_check
    *  Which major version to filter the choices by
    *
    * @return string
-   *  Returns the user chosen dist
+   *  Returns the user chosen profile
    */
-  protected function chooseDist($version_check = FALSE) {
-    // Pull our distributions
-    $dists = $this->getDists();
+  protected function chooseprofile($version_check = FALSE) {
+    // Pull our profileributions
+    $profiles = $this->getprofiles();
     // Version filtering
     if ($version_check) {
       preg_match('/-(\d+)\./', $version_check, $version_match);
       if (isset($version_match[1])) {
-        $filtered_dists = array();
+        $filtered_profiles = array();
         $version_filter = $version_match[1];
-        // Now clean the dists array
-        foreach ($dists as $k => $dist) {
-          if (preg_match("/^$version_filter/", $dist)) {
-            //unset($dists[$k]);
-            $filtered_dists[] = $dist;
+        // Now clean the profiles array
+        foreach ($profiles as $k => $profile) {
+          if (preg_match("/^$version_filter/", $profile)) {
+            //unset($profiles[$k]);
+            $filtered_profiles[] = $profile;
           }
         // This re-keys the array so the keys are sequential after the unset
-        $dists = $filtered_dists;
+        $profiles = $filtered_profiles;
         }
       }
     }
 
     // Print the list that has already been filtered if necessary
-    foreach ($dists as $k => $dist) {
-      print $k+1 . ". $dist\n";
+    foreach ($profiles as $k => $profile) {
+      print $k+1 . ". $profile\n";
     }
     // Get user input
-    fwrite(STDOUT, "Choose a dist: ");
-    $dist_choice = fgets(STDIN);
+    fwrite(STDOUT, "Choose a profile: ");
+    $profile_choice = fgets(STDIN);
 
-    // Return the chosen dist
-    return $dists[$dist_choice-1];
+    // Return the chosen profile
+    return $profiles[$profile_choice-1];
   }
 
   /**
@@ -658,10 +651,10 @@ class Dslm {
   }
 
   /**
-   * Takes an array of core or dist versions and sorts them by version number
+   * Takes an array of core or profile versions and sorts them by version number
    *
    * @param string $type
-   *  Should be core or dist to determine which we're sorting. Defaults to core
+   *  Should be core or profile to determine which we're sorting. Defaults to core
    * @param array $v
    *  An array containing the versions to sort
    *
@@ -683,9 +676,9 @@ class Dslm {
       }
     }
 
-    // The dist sort function
-    if (!function_exists("dist_sort")) {
-      function dist_sort($a,$b) {
+    // The profile sort function
+    if (!function_exists("profile_sort")) {
+      function profile_sort($a,$b) {
         $a_match = str_replace('.x-', '.', $a);
         $b_match = str_replace('.x-', '.', $b);
         // If we don't have two matches, return 0
@@ -698,7 +691,7 @@ class Dslm {
     }
 
     // Sort the version array with our custom compare function
-    $sort_function = ($type=='core') ? "core_sort" : "dist_sort";
+    $sort_function = ($type=='core') ? "core_sort" : "profile_sort";
     usort($v, $sort_function);
     return $v;
   }
@@ -717,15 +710,15 @@ class Dslm {
   }
 
   /**
-   * Distribution validation
+   * profile validation
    *
    * @param string $s
-   *  The dist string to validate
+   *  The profile string to validate
    *
    * @return boolean
    *  Returns a boolean for validated or not
    */
-  protected function is_dist_string($s) {
+  protected function is_profile_string($s) {
     return preg_match('/([\d+])\.x\-[\d+]/', $s);
   }
 }

@@ -37,7 +37,7 @@ class Dslm {
    *
    * @var string
    */
-  protected $profile_regex = '/(\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
+  protected $profile_regex = '/^([A-Z0-9_])+\-(\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
 
   /**
    * DSLM constructor

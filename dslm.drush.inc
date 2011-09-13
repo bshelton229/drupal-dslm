@@ -38,21 +38,18 @@ function dslm_drush_command() {
   $items['dslm-info'] = array(
     'description' => 'DSLM site information',
     'arguments' => $arguments,
-    'aliases' => array('si'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
   );
 
   $items['dslm-cores'] = array(
     'description' => 'DSLM Show Cores',
     'arguments' => $arguments,
-    'aliases' => array('sc'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
   $items['dslm-dists'] = array(
     'description' => 'DSLM  Show Cores',
     'arguments' => $arguments,
-    'aliases' => array('sd'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
@@ -61,28 +58,24 @@ function dslm_drush_command() {
     'arguments' => $arguments,
     // @TODO Wire up a --skip-sites-default option as well
     'options' => $release_options,
-    'aliases' => array('sn'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
   $items['dslm-switch'] = array(
     'description' => 'DSLM  Switch Core and Dist',
     'arguments' => $arguments,
-    'aliases' => array('ss'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
   );
 
   $items['dslm-switch-core'] = array(
     'description' => 'DSLM  Switch Core',
     'arguments' => $arguments,
-    'aliases' => array('ssc'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
   );
 
   $items['dslm-switch-dist'] = array(
     'description' => 'DSLM  Switch Dist',
     'arguments' => $arguments,
-    'aliases' => array('ssd'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
   );
 
@@ -271,7 +264,7 @@ function drush_dslm_switch_dist() {
  */
 function _dslm_bootstrap() {
   if (!$base = _dslm_get_base()) {
-    return drush_set_error('Please set a dslm drupal base');
+    return drush_set_error('DSLM: Please set a dslm drupal base in order for DSLM commands to work.');
   }
 
   // Instantiate the dslm object

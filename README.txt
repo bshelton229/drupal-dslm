@@ -44,9 +44,10 @@ COMMANDS
 --------
 drush dslm-new [site-directory] [dist] [core]
 Will create a new site prompting you to choose which core and distribution 
-it should be linked to. If you pass the --latest flag, the latest core and
-distribution will automatically be chosen. You may optionally pass a valid
-core and dist on the command line to run non-interactively.
+it should be linked to. If you pass the --latest flag, the latest stable
+core and distribution will automatically be chosen (--dev uses the latest
+development version.) You may optionally pass a valid core and dist on the
+command line to run non-interactively.
 
 drush dslm-info
 Will display the current core and distribution linked to the directory

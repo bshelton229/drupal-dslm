@@ -236,18 +236,7 @@ class Dslm {
 
     // Run the profile and core switches
     $core = $this->switchCore($dest_dir, $core, TRUE);
-    $profile = $this->switchprofile($dest_dir, $profile, TRUE, $core);
-
-    // Create sites/default structure
-    $dest_sites_default = "$dest_dir/sites/default";
-    if (!file_exists($dest_sites_default)) {
-      mkdir($dest_sites_default);
-      mkdir("$dest_sites_default/files");
-      copy(
-        "$base/cores/$core/sites/default/default.settings.php",
-        "$dest_sites_default/default.settings.php"
-      );
-    }
+    //$profile = $this->switchprofile($dest_dir, $profile, TRUE, $core);
 
     // Break here for testing right now
     return TRUE;
@@ -299,11 +288,49 @@ class Dslm {
     }
 
     $source_dir = "$base/cores/$core";
+
+    // Remove any existing symlinks in the dest dir that link back to a core folder
     $this->removeCoreLinks($dest_dir);
+
+    // Iterate through the source files and start linking
     foreach ($this->filesInDir($source_dir) as $f) {
+      // We do not want to link the the sites or profiles directories
+      // We'll add slugs later
+      if($f == "sites" || $f == "profiles") { continue; }
       $relpath = $this->relpath($source_dir, $dest_dir);
       symlink("$relpath/$f", "$dest_dir/$f");
     }
+
+    // See if we need to create a profiles dir or sites dir tree
+    if(!file_exists("$dest_dir/sites")) {
+      mkdir("$dest_dir/sites");
+      mkdir("$dest_dir/sites/all");
+      mkdir("$dest_dir/sites/default");
+      mkdir("$dest_dir/sites/default/files");
+    }
+    // Copy over the default.settings.php file
+    copy(
+      "$source_dir/sites/default/default.settings.php",
+      "$dest_dir/sites/default/default.settings.php"
+    );
+
+    // Link in the Drupal stock profiles
+    if(!file_exists("$dest_dir/profiles")) {
+      mkdir("$dest_dir/profiles");
+    }
+
+    // Try to link the existing Drupal profiles
+    foreach($this->filesInDir("$source_dir/profiles") as $f) {
+      if(is_link("$dest_dir/profiles/$f")) {
+        unlink("$dest_dir/profiles/$f");
+      }
+      if(!file_exists("$dest_dir/profiles/$f")) {
+        $relpath = $this->relpath("$source_dir/profiles", "$dest_dir/profiles");
+        symlink("$relpath/$f", "$dest_dir/profiles/$f");
+      }
+    }
+
+    // Return the core we just linked to
     return $core;
   }
 

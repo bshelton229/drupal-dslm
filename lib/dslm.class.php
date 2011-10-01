@@ -99,7 +99,7 @@ class Dslm {
   }
 
   /**
-   * Get the profiles 
+   * Get the profiles
    *
    * @return array
    *  Returns an array of profiles
@@ -133,7 +133,7 @@ class Dslm {
   }
 
   /**
-   * Return the latest versions of core and profile 
+   * Return the latest versions of core and profile
    * broken up by core/profile, dev_core/dev_profile, and release_core/release_profile
    *
    * @return array
@@ -337,12 +337,12 @@ class Dslm {
       $this->last_error = 'Invalid Drupal Directory';
       return FALSE;
     }
-    
+
     // Get the profile if it wasn't specified on the CLI
     if (!$profile || !$this->isValidProfile($profile)) {
       $profile = $this->chooseProfile($filter);
     }
-    
+
     $source_profile_dir = $this->getBase() . "/profiles/" . $profile;
     $profiles_dir = $dest_dir . '/profiles/';
 
@@ -350,7 +350,7 @@ class Dslm {
     if (is_dir($profiles_dir)) {
       // @TODO-matt: name of $profile.
       $profile_dir = $profiles_dir . '/' . $profile;
-      
+
       // Remove the current profiles/$profile directory if it's a link
       if (is_link($profile_dir)) {
         if ($this->isWindows()) {
@@ -654,7 +654,7 @@ class Dslm {
     // Pull our profiles
     $get_profiles = $this->getProfiles();
     $profiles = $get_profiles['all'];
-    
+
     // Version filtering
     if ($version_check) {
       preg_match('/-(\d+)\./', $version_check, $version_match);

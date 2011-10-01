@@ -38,21 +38,18 @@ function dslm_drush_command() {
   $items['dslm-info'] = array(
     'description' => 'DSLM site information',
     'arguments' => $arguments,
-    'aliases' => array('si'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
   );
 
   $items['dslm-cores'] = array(
     'description' => 'DSLM Show Cores',
     'arguments' => $arguments,
-    'aliases' => array('sc'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
   $items['dslm-profiles'] = array(
     'description' => 'DSLM  Show Profiles',
     'arguments' => $arguments,
-    'aliases' => array('sd'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
@@ -61,28 +58,24 @@ function dslm_drush_command() {
     'arguments' => $arguments,
     // @TODO Wire up a --skip-sites-default option as well
     'options' => $release_options,
-    'aliases' => array('sn'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
   $items['dslm-switch'] = array(
     'description' => 'DSLM  Switch Core and profile',
     'arguments' => $arguments,
-    'aliases' => array('ss'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
   );
 
   $items['dslm-switch-core'] = array(
     'description' => 'DSLM  Switch Core',
     'arguments' => $arguments,
-    'aliases' => array('ssc'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
   );
 
   $items['dslm-switch-profile'] = array(
     'description' => 'DSLM  Switch Profile',
     'arguments' => $arguments,
-    'aliases' => array('ssd'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
   );
 
@@ -132,10 +125,10 @@ function drush_dslm_profiles() {
   if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
   }
-  
+
   // Pull the profiles
   $profiles = $dslm->getProfiles();
-  
+
   // Iterate through the profiles array and print them out
   foreach ($profiles['all'] as $key => $profile) {
     print $profile . "\n";

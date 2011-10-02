@@ -37,7 +37,7 @@ class Dslm {
    *
    * @var string
    */
-  protected $profile_regex = '/^([A-Z0-9_])+\-(\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
+  protected $profile_regex = '/^([A-Z0-9_]+)\-((\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*))$/i';
 
   /**
    * DSLM constructor
@@ -102,34 +102,44 @@ class Dslm {
    * Get the profiles
    *
    * @return array
-   *  Returns an array of profiles
+   *  Returns an associative array of profiles grouped by profile name
    */
   public function getProfiles() {
-    $all = array();
-    $pre_releases = array();
-    $releases = array();
+    $profiles = array();
 
+    // Reusable regex for determining if the profile strin is dev or release
+    $dev_regex = '/[dev|alph|beta|rc|pl]+[\.\d]*$/i';
+
+    // Iterate through and get the profiles into named groups
     foreach ($this->filesInDir($this->getBase() . "/profiles/") as $profile) {
-      if ($this->isProfileString($profile)) {
-        $all[] = $profile;
+      if ($matches = $this->isProfileString($profile)) {
 
+        $profiles[$matches[1]]['all'][] = $matches[2];
         // Test for pre-releases
-        if (preg_match('/[dev|alph|beta|rc|pl]+[\.\d]*$/i', $profile)) {
-          $pre_releases[] = $profile;
+        if (preg_match($dev_regex, $profile)) {
+          $profiles[$matches[1]]['dev'][] = $matches[2];
         }
         else {
-          $releases[] = $profile;
+          $profiles[$matches[1]]['release'][] = $matches[2];
         }
       }
     }
 
-    $out = array(
-      'all' => $this->orderByVersion('profile', $all),
-      'dev' => $this->orderByVersion('profile', $pre_releases),
-      'release' => $this->orderByVersion('profile', $releases),
-    );
+    // Normalize and sort the named group sub-arrays
+    foreach ($profiles as $name => $value) {
+      foreach (array('all', 'dev', 'release') as $class) {
+        if (isset($value[$class])) {
+          usort($profiles[$name][$class], 'version_compare');
+        }
+        else {
+          // We probably want at least an empty array for each class
+          $profiles[$name][$class] = array();
+        }
+      }
+    }
 
-    return $out;
+    // Return the profiles array
+    return $profiles;
   }
 
   /**

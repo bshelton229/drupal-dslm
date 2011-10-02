@@ -130,9 +130,11 @@ function drush_dslm_profiles() {
   $profiles = $dslm->getProfiles();
 
   // Iterate through the profiles array and print them out
-  foreach ($profiles['all'] as $key => $profile) {
-    print $profile . "\n";
+  foreach ($profiles as $name => $profile) {
+    $out .= "$name\n";
   }
+
+  drush_log(trim($out), 'ok');
   return TRUE;
 }
 

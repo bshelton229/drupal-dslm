@@ -131,7 +131,10 @@ function drush_dslm_profiles() {
 
   // Iterate through the profiles array and print them out
   foreach ($profiles as $name => $profile) {
-    $out .= "$name\n";
+    $out .= "$name:\n";
+    foreach($profile['all'] as $version) {
+      $out .= "  $version\n";
+    }
   }
 
   drush_log(trim($out), 'ok');

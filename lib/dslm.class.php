@@ -184,9 +184,14 @@ class Dslm {
    * @return boolean
    *  Returns a boolean for whether the profile is valid or not
    */
-  public function isValidProfile($profile) {
+  public function isValidProfile($name, $version) {
     $profiles = $this->getProfiles();
-    return in_array($profile, $profiles['all']);
+    if (isset($profiles[$name]) && in_array($version, $profiles[$name]['all'])) {
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
   }
 
   /**

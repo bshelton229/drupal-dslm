@@ -350,7 +350,7 @@ class Dslm {
   }
 
   /**
-   * Switch the profile
+   * Manage profiles
    *
    * @param string $dest_dir
    *  The destination dir to switch the profile for.
@@ -364,64 +364,96 @@ class Dslm {
    * @return string
    *  Returns the core it switched to.
    */
-  public function switchprofile($dest_dir = FALSE, $profile = FALSE, $force = FALSE, $filter = FALSE) {
-    // Pull the base
-    $base = $this->getBase();
-    // Handle destination directory
-    if (!$dest_dir) {
-      $dest_dir = getcwd();
-    }
-    else {
-      $dest_dir = realpath($dest_dir);
-    }
-    // Make sure this is a drupal base
-    if (!$this->isDrupalDir($dest_dir) && !$force) {
-      $this->last_error = 'Invalid Drupal Directory';
+  // public function switchprofile($dest_dir = FALSE, $profile = FALSE, $force = FALSE, $filter = FALSE) {
+  //   // Pull the base
+  //   $base = $this->getBase();
+  //   // Handle destination directory
+  //   if (!$dest_dir) {
+  //     $dest_dir = getcwd();
+  //   }
+  //   else {
+  //     $dest_dir = realpath($dest_dir);
+  //   }
+  //   // Make sure this is a drupal base
+  //   if (!$this->isDrupalDir($dest_dir) && !$force) {
+  //     $this->last_error = 'Invalid Drupal Directory';
+  //     return FALSE;
+  //   }
+  //
+  //   // Get the profile if it wasn't specified on the CLI
+  //   if (!$profile || !$this->isValidProfile($profile)) {
+  //     $profile = $this->chooseProfile($filter);
+  //   }
+  //
+  //   $source_profile_dir = $this->getBase() . "/profiles/" . $profile;
+  //   $profiles_dir = $dest_dir . '/profiles/';
+  //
+  //   // Link it up
+  //   if (is_dir($profiles_dir)) {
+  //     // @TODO-matt: name of $profile.
+  //     $profile_dir = $profiles_dir . '/' . $profile;
+  //
+  //     // Remove the current profiles/$profile directory if it's a link
+  //     if (is_link($profile_dir)) {
+  //       if ($this->isWindows()) {
+  //         $target = readlink($profile_dir);
+  //         if (is_dir($target)) {
+  //           rmdir($profile_dir);
+  //         }
+  //         else {
+  //           unlink($profile_dir);
+  //         }
+  //       }
+  //       else {
+  //         // We're a sane operating system, just remove the link
+  //         unlink($profile_dir);
+  //       }
+  //     }
+  //     else {
+  //       // If there is a profiles/$profile directory which isn't a symlink we're going to be safe and error out
+  //       if (file_exists($profile_dir)) {
+  //         $this->last_error = 'The profile directory already exists and is not a symlink';
+  //         return FALSE;
+  //       }
+  //     }
+  //
+  //     // Create our new symlink to the correct profile
+  //     $profile_link_path = $this->relpath($source_profile_dir, $profiles_dir);
+  //     symlink($profile_link_path, $profile_dir);
+  //   }
+  //   return $profile;
+  // }
+
+  /**
+   * Manage a single profile
+   */
+  public function manageProfile($name, $version, $dir, $upgrade = FALSE) {
+    // Bail if the profile isn't valid
+    if (!$this->isValidProfile($name, $version)) {
       return FALSE;
     }
 
-    // Get the profile if it wasn't specified on the CLI
-    if (!$profile || !$this->isValidProfile($profile)) {
-      $profile = $this->chooseProfile($filter);
+    // Set some path variables to make things easier
+    $base = $this->base;
+    $dest_profiles_dir = "$dir/profiles";
+    $source_profile_dir = "$base/profiles/$name-$version";
+
+    // See if the profile is already linked
+    if(file_exists("$dir/profiles/$name") && !$upgrade) {
+      // TODO add a method that checks to see if this is a link
+      // and it's a link to our profiles base, if so, see if we're
+      // in the upgrade business based on method options
+      $this->last_error = "The profile '$name' is already linked to this site.";
+      return FALSE;
     }
 
-    $source_profile_dir = $this->getBase() . "/profiles/" . $profile;
-    $profiles_dir = $dest_dir . '/profiles/';
+    // Relative path between the two profiles folders
+    $relpath = $this->relpath("$base/profiles", "$dir/profiles");
 
-    // Link it up
-    if (is_dir($profiles_dir)) {
-      // @TODO-matt: name of $profile.
-      $profile_dir = $profiles_dir . '/' . $profile;
+    // Working symlink
+    symlink("$relpath/$name-$version", "$dir/profiles/$name");
 
-      // Remove the current profiles/$profile directory if it's a link
-      if (is_link($profile_dir)) {
-        if ($this->isWindows()) {
-          $target = readlink($profile_dir);
-          if (is_dir($target)) {
-            rmdir($profile_dir);
-          }
-          else {
-            unlink($profile_dir);
-          }
-        }
-        else {
-          // We're a sane operating system, just remove the link
-          unlink($profile_dir);
-        }
-      }
-      else {
-        // If there is a profiles/$profile directory which isn't a symlink we're going to be safe and error out
-        if (file_exists($profile_dir)) {
-          $this->last_error = 'The profile directory already exists and is not a symlink';
-          return FALSE;
-        }
-      }
-
-      // Create our new symlink to the correct profile
-      $profile_link_path = $this->relpath($source_profile_dir, $profiles_dir);
-      symlink($profile_link_path, $profile_dir);
-    }
-    return $profile;
+    return TRUE;
   }
 
   /**

@@ -35,11 +35,11 @@ function dslm_drush_command() {
     'dev' => 'Use the latest dev version of core and/or profile.',
   );
 
-  $items['dslm-info'] = array(
-    'description' => 'DSLM site information',
-    'arguments' => $arguments,
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
-  );
+  // $items['dslm-info'] = array(
+  //   'description' => 'DSLM site information',
+  //   'arguments' => $arguments,
+  //   'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
+  // );
 
   $items['dslm-cores'] = array(
     'description' => 'DSLM Show Cores',
@@ -61,19 +61,13 @@ function dslm_drush_command() {
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
 
-  $items['dslm-switch'] = array(
-    'description' => 'DSLM  Switch Core and profile',
-    'arguments' => $arguments,
-    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
-  );
-
   $items['dslm-switch-core'] = array(
     'description' => 'DSLM  Switch Core',
     'arguments' => $arguments,
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
   );
 
-  $items['dslm-switch-profile'] = array(
+  $items['dslm-add-profile'] = array(
     'description' => 'DSLM  Switch Profile',
     'arguments' => $arguments,
     'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
@@ -184,28 +178,6 @@ function drush_dslm_new() {
 }
 
 /**
- * Command callback. Prompts the user to switch the dslm profile and core.
- */
-function drush_dslm_switch() {
-  $args = drush_get_arguments();
-  $core = isset($args[1]) ? $args[1] : FALSE;
-  $profile = isset($args[2]) ? $args[2] : FALSE;
-
-  // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
-  if (!$dslm = _dslm_bootstrap()) {
-    return FALSE;
-  }
-
-  $run = $dslm->newSite(getcwd(), $core, $profile, TRUE);
-  if (!$run) {
-    return drush_set_error($dslm->lastError());
-  }
-  else {
-    return TRUE;
-  }
-}
-
-/**
  * Command callback. Prompts the user to switch the dslm core.
  */
 function drush_dslm_switch_core() {
@@ -226,27 +198,26 @@ function drush_dslm_switch_core() {
 }
 
 /**
- * Command callback. Prompts the user to switch the dslm profile.
+ * Command callback. Adds a profile
  */
-function drush_dslm_switch_profile() {
-  $args = drush_get_arguments();
-  $profile = isset($args[1]) ? $args[1] : FALSE;
-
+function drush_dslm_add_profile() {
   // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
   if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
   }
 
-  // Pull the current site info for core filtering
-  $site_info = $dslm->siteInfo(getcwd());
-  // Run the switch
-  $run = $dslm->switchprofile(getcwd(), $profile, FALSE, $site_info['core']);
-  if (!$run) {
-    return drush_set_error($dslm->lastError());
+  $args = drush_get_arguments();
+  if (!(isset($args[1]) && isset($args[2]))) {
+    return drush_set_error("Please specify a profile name and profile version to add a profile.\nExample: drush dslm-add-profile name version");
+  }
+
+  if ($dslm->manageProfile($args[1], $args[2], getcwd())) {
+    drush_log('Profile has been added', 'ok');
   }
   else {
-    return TRUE;
+    drush_log($dslm->lastError(), 'error');
   }
+
 }
 
 /**

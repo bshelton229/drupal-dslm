@@ -184,10 +184,20 @@ class Dslm {
    * @return boolean
    *  Returns a boolean for whether the profile is valid or not
    */
-  public function isValidProfile($name, $version) {
+  public function isValidProfile($name, $version = FALSE) {
     $profiles = $this->getProfiles();
-    if (isset($profiles[$name]) && in_array($version, $profiles[$name]['all'])) {
-      return TRUE;
+    if (isset($profiles[$name])) {
+      if ($version) {
+        if (in_array($version, $profiles[$name]['all'])) {
+          return TRUE;
+        }
+        else {
+          return FALSE;
+        }
+      }
+      else {
+        return TRUE;
+      }
     }
     else {
       return FALSE;
@@ -206,20 +216,20 @@ class Dslm {
     if (!$d) {
       $d = getcwd();
     }
-    if (!$this->isDrupalDir($d)) {
-      $this->last_error = 'This directory isn\'t a Drupal dir';
-      return FALSE;
-    }
+
     $core = $this->firstLinkDirname($d);
-    $profile = $this->firstLinkDirname($d.'/profiles');
-    if (!$core || !$profile) {
+    $managed_profiles = $this->managedProfiles($d);
+
+    if (!$core) {
       $this->last_error = 'Invalid symlinked site';
       return FALSE;
     }
+
     $out = array(
       'core' => $core,
-      'profile' => $profile,
+      'profiles' => $managed_profiles,
     );
+
     return $out;
   }
 
@@ -349,21 +359,7 @@ class Dslm {
     return $core;
   }
 
-  /**
-   * Manage profiles
-   *
-   * @param string $dest_dir
-   *  The destination dir to switch the profile for.
-   * @param string $profile
-   *  The profile to switch to.
-   * @param boolean $force
-   *  Whether or not to force the switch
-   * @param string $filter
-   *  The major core version to filter for
-   *
-   * @return string
-   *  Returns the core it switched to.
-   */
+  /** This method is being replaced by manageProfile() **/
   // public function switchprofile($dest_dir = FALSE, $profile = FALSE, $force = FALSE, $filter = FALSE) {
   //   // Pull the base
   //   $base = $this->getBase();
@@ -425,12 +421,31 @@ class Dslm {
   // }
 
   /**
-   * Manage a single profile
+   * Manage a Profile
+   *
+   * @param string $name
+   *  The profile name
+   * @param string $version
+   *  The profile version
+   * @param string $dir
+   *  The site base directory. Defaults to FALSE which will render getcwd()
+   *  in the method.
+   * @param boolean $upgade
+   *  Whether or not the method is to attemp to change the version if the directory
+   *  already exists and is managed, or whether the method is to bail.
+   *
+   * @return string
+   *  Returns the profile string we just switched to.
    */
-  public function manageProfile($name, $version, $dir, $upgrade = FALSE) {
+  public function manageProfile($name, $version, $dir = FALSE, $upgrade = FALSE) {
     // Bail if the profile isn't valid
     if (!$this->isValidProfile($name, $version)) {
       return FALSE;
+    }
+
+    // Default the directory to getcwd()
+    if (!$dir) {
+      $dir = getcwd();
     }
 
     // Set some path variables to make things easier
@@ -453,7 +468,52 @@ class Dslm {
     // Working symlink
     symlink("$relpath/$name-$version", "$dir/profiles/$name");
 
-    return TRUE;
+    return "$name-$version";
+  }
+
+  /**
+   * Get an array of managed profiles
+   *
+   * @param string $dir
+   *  The base site directory. Defaults to FALSE which will cause the method
+   *  to use getcwd()
+   *
+   * @return array
+   *  Returns an array of profile strings managed within the site dir.
+   *
+   */
+  public function managedProfiles($dir = FALSE) {
+    $managed_profiles = array();
+
+    // Default to the current working directory
+    if (!$dir) {
+      $dir = getcwd();
+    }
+
+    // Make sure there is a profiles directory
+    // If not return an empty array
+    if (!is_dir("$dir/profiles")) {
+      return array();
+    }
+
+    // Pull a list of profiles in the base
+    $profiles = $this->getProfiles();
+
+    // Iterate through the local profiles
+    foreach($this->filesInDir("$dir/profiles") as $f) {
+      $fullpath = "$dir/profiles/$f";
+      if (is_link($fullpath)) {
+        $name = basename(readlink($fullpath));
+        if ($matches = $this->isProfileString($name)) {
+          if ($this->isValidProfile($matches[1], $matches[2])) {
+            $managed_profiles[] = $name;
+          }
+        }
+      }
+    }
+
+    // Return any profiles managed within this directory
+    return $managed_profiles;
   }
 
   /**

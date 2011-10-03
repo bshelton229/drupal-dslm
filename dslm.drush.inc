@@ -35,11 +35,11 @@ function dslm_drush_command() {
     'dev' => 'Use the latest dev version of core and/or profile.',
   );
 
-  // $items['dslm-info'] = array(
-  //   'description' => 'DSLM site information',
-  //   'arguments' => $arguments,
-  //   'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
-  // );
+  $items['dslm-info'] = array(
+    'description' => 'DSLM site information',
+    'arguments' => $arguments,
+    'bootstrap' => DRUSH_BOOTSTRAP_DRUPAL_ROOT,
+  );
 
   $items['dslm-cores'] = array(
     'description' => 'DSLM Show Cores',
@@ -81,13 +81,25 @@ function dslm_drush_command() {
  */
 function drush_dslm_info() {
   // Bootstrap dslm, this grabs the instantiated and configured DSLM library object
-  if (!$dslm = _dslm_bootstrap())
+  if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
+  }
+
   // Iterate through the cores array and print them out
   if (!$info = $dslm->siteInfo()) {
     return drush_set_error($dslm->lastError());
   }
-  print "Core: {$info['core']} (Profile: {$info['profile']})\n";
+
+  $out = "Core: {$info['core']}\n";
+  if(!empty($info['profiles'])) {
+    $out .= "Managed Profiles:\n";
+    foreach($info['profiles'] as $profile) {
+      $out .= "  $profile\n";
+    }
+  }
+
+  // Render the display
+  drush_log(trim($out), 'ok');
   return TRUE;
 }
 
@@ -211,8 +223,8 @@ function drush_dslm_add_profile() {
     return drush_set_error("Please specify a profile name and profile version to add a profile.\nExample: drush dslm-add-profile name version");
   }
 
-  if ($dslm->manageProfile($args[1], $args[2], getcwd())) {
-    drush_log('Profile has been added', 'ok');
+  if ($dslm->manageProfile($args[1], $args[2])) {
+    drush_log("The profile '{$args[1]}' has been added", 'ok');
   }
   else {
     drush_log($dslm->lastError(), 'error');

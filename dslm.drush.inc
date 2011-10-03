@@ -166,6 +166,10 @@ function drush_dslm_new() {
     return FALSE;
   }
 
+  // @TODO: Use drush_prompt for the interactive menu if a core isn't provided
+  // Remove the interactive menu functionality from the Dslm class.
+  // This goes for all other interactive menus as well.
+
   // Set the profile and core, either supplied on the CLI, set with --latest, or will prompt
   if (drush_get_option('latest', FALSE)) {
     $latest = $dslm->latest();

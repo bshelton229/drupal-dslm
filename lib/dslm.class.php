@@ -261,9 +261,7 @@ class Dslm {
 
     // Run the profile and core switches
     $core = $this->switchCore($dest_dir, $core, TRUE);
-    //$profile = $this->switchprofile($dest_dir, $profile, TRUE, $core);
 
-    // Break here for testing right now
     return TRUE;
   }
 
@@ -291,12 +289,6 @@ class Dslm {
     }
     elseif (file_exists($dest_dir)) {
       $dest_dir = realpath($dest_dir);
-    }
-
-    // Make sure this is a drupal base
-    if (!$this->isDrupalDir($dest_dir) && !$force) {
-      $this->last_error = 'Invalid Drupal Directory';
-      return FALSE;
     }
 
     // Get the core if it wasn't specified on the CLI

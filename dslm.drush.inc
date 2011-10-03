@@ -166,27 +166,30 @@ function drush_dslm_new() {
     return FALSE;
   }
 
-  // @TODO: Use drush_prompt for the interactive menu if a core isn't provided
-  // Remove the interactive menu functionality from the Dslm class.
-  // This goes for all other interactive menus as well.
-
   // Set the profile and core, either supplied on the CLI, set with --latest, or will prompt
   if (drush_get_option('latest', FALSE)) {
-    $latest = $dslm->latest();
-    $core = $latest['release_core'];
-    $profile = $latest['release_profile'];
+    $latest = $dslm->latestCores();
+    $core = $latest['release'];
   }
   elseif (drush_get_option('dev', FALSE)) {
-    $latest = $dslm->latest();
-    $core = $latest['dev_core'];
-    $profile = $latest['dev_profile'];
+    $latest = $dslm->latestCores();
+    $core = $latest['dev'];
   }
   else {
     $core = isset($args[2]) ? $args[2] : FALSE;
-    $profile = isset($args[3]) ? $args[3] : FALSE;
   }
 
-  if (!$res = $dslm->newSite($site_dest, $core, $profile)) {
+  // If we still don't have a core string try to get on iteractively
+  if (!$core) {
+    $core_list = $dslm->getCores();
+    $pick_core = drush_choice($core_list['all']);
+    if (!$pick_core) {
+      return FALSE;
+    }
+    $core = $core_list['all'][$pick_core];
+  }
+
+  if (!$res = $dslm->newSite($site_dest, $core)) {
     return drush_set_error($dslm->lastError());
   }
   else {

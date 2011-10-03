@@ -143,23 +143,19 @@ class Dslm {
   }
 
   /**
-   * Return the latest versions of core and profile
-   * broken up by core/profile, dev_core/dev_profile, and release_core/release_profile
+   * Return the latest versions of core
+   * broken up by all, dev, and release
    *
    * @return array
-   *   Returns an array of the various latest versions
+   *   Returns an array of the various latest cores
    */
-  public function latest() {
+  public function latestCores() {
     $cores = $this->getCores();
-    $profiles = $this->getProfiles();
 
     return array(
-      'core' => $cores['all'][count($cores['all'])-1],
-      'profile' => $profiles['all'][count($profiles['all'])-1],
-      'dev_core' => $cores['dev'][count($cores['dev'])-1],
-      'dev_profile' => $profiles['dev'][count($profiles['dev'])-1],
-      'release_core' => $cores['release'][count($cores['release'])-1],
-      'release_profile' => $profiles['release'][count($profiles['release'])-1],
+      'all' => $cores['all'][count($cores['all'])-1],
+      'dev' => $cores['dev'][count($cores['dev'])-1],
+      'release' => $cores['release'][count($cores['release'])-1],
     );
   }
 
@@ -248,7 +244,7 @@ class Dslm {
    * @return boolean
    *  Returns boolean
    */
-  public function newSite($dest_dir, $core = FALSE, $profile = FALSE, $force = FALSE) {
+  public function newSite($dest_dir, $core = FALSE, $force = FALSE) {
     // Load the base
     $base = $this->getBase();
 
@@ -765,50 +761,6 @@ class Dslm {
 
     // Return the chosen core
     return $cores[$core_choice-1];
-  }
-
-  /**
-   * Internal function to get the profile through interactive input
-   *
-   * @param string $version_check
-   *  Which major version to filter the choices by
-   *
-   * @return string
-   *  Returns the user chosen profile
-   */
-  protected function chooseProfile($version_check = FALSE) {
-    // Pull our profiles
-    $get_profiles = $this->getProfiles();
-    $profiles = $get_profiles['all'];
-
-    // Version filtering
-    if ($version_check) {
-      preg_match('/-(\d+)\./', $version_check, $version_match);
-      if (isset($version_match[1])) {
-        $filtered_profiles = array();
-        $version_filter = $version_match[1];
-        // Now clean the profiles array
-        foreach ($profiles as $k => $profile) {
-          if (preg_match("/^$version_filter/", $profile)) {
-            //unset($profiles[$k]);
-            $filtered_profiles[] = $profile;
-          }
-        // This re-keys the array so the keys are sequential after the unset
-        $profiles = $filtered_profiles;
-        }
-      }
-    }
-
-    // Print the list that has already been filtered if necessary
-    foreach ($profiles as $k => $profile) {
-      print $k+1 . ". $profile\n";
-    }
-    // Get user input
-    fwrite(STDOUT, "Choose a profile: ");
-    $profile_choice = fgets(STDIN);
-
-    // Return the chosen profile
-    return $profiles[$profile_choice-1];
   }
 
   /**

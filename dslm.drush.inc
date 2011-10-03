@@ -115,11 +115,12 @@ function drush_dslm_cores() {
   // Pull cores
   $cores = $dslm->getCores();
 
-
   // Iterate through the cores array and print them out
   foreach ($cores['all'] as $key => $core) {
-    print $core . "\n";
+    $out .= "$core\n";
   }
+
+  drush_log(trim($out), 'ok');
   return TRUE;
 }
 

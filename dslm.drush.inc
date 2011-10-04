@@ -227,12 +227,39 @@ function drush_dslm_add_profile() {
   }
 
   $args = drush_get_arguments();
-  if (!(isset($args[1]) && isset($args[2]))) {
-    return drush_set_error("Please specify a profile name and profile version to add a profile.\nExample: drush dslm-add-profile name version");
+
+  // Get a list of profiles
+  $profiles = $dslm->getProfiles();
+
+  // Get the profile name via args or interactively
+  $profile_name = isset($args[2]) ? $args[2] : FALSE;
+  if (!$profile_name) {
+    $choices = array();
+    foreach ($profiles as $k => $v) {
+      $choices[$k] = $k;
+    }
+    $profile_name = drush_choice($choices);
+    if (!$profile_name || !isset($profiles[$profile_name])) {
+      return FALSE;
+    }
   }
 
-  if ($dslm->manageProfile($args[1], $args[2])) {
-    drush_log("The profile '{$args[1]}' has been added", 'ok');
+  // Get the version via args or interactively
+  $profile_Version = isset($args[2]) ? $args[2] : FALSE;
+  if (!$profile_version) {
+    $choices = array();
+    foreach ($profiles[$profile_name]['all'] as $k => $v) {
+      $choices[$v] = $v;
+    }
+    $profile_version = drush_choice($choices);
+    if (!$profile_version || !in_array($profile_version, $profiles[$profile_name]['all'])) {
+      return FALSE;
+    }
+  }
+
+  // Run the DSLM manageProfile method to add the profile or deal with an error
+  if ($dslm->manageProfile($profile_name, $profile_version)) {
+    drush_log("The profile '$profile_name' version '$profile_version' has been added", 'ok');
   }
   else {
     drush_log($dslm->lastError(), 'error');

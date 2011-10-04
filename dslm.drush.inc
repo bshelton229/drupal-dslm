@@ -201,14 +201,24 @@ function drush_dslm_new() {
  * Command callback. Prompts the user to switch the dslm core.
  */
 function drush_dslm_switch_core() {
-  $args = drush_get_arguments();
-  $core = isset($args[1]) ? $args[1] : FALSE;
-
   // Bootstrap dslm, this grabs the instantiated and configured Dslm library object
   if (!$dslm = _dslm_bootstrap()) {
     return FALSE;
   }
-  $run = $dslm->switchCore(getcwd(), $core);
+
+  $args = drush_get_arguments();
+  $core = isset($args[1]) ? $args[1] : FALSE;
+  // If we still don't have a core string try to get on iteractively
+  if (!$core) {
+    $core_list = $dslm->getCores();
+    $pick_core = drush_choice($core_list['all']);
+    if (!$pick_core) {
+      return FALSE;
+    }
+    $core = $core_list['all'][$pick_core];
+  }
+
+  $run = $dslm->switchCore($core);
   if (!$run) {
     return drush_set_error($dslm->lastError());
   }

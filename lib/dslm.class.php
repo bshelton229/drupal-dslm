@@ -256,7 +256,7 @@ class Dslm {
     }
 
     // Run the profile and core switches
-    $core = $this->switchCore($dest_dir, $core, TRUE);
+    $core = $this->switchCore($core, $dest_dir, TRUE);
 
     return TRUE;
   }
@@ -275,9 +275,15 @@ class Dslm {
    * @return string
    *  Returns the core it switched to.
    */
-  public function switchCore($dest_dir = FALSE, $core = FALSE, $force = FALSE) {
+  public function switchCore($core, $dest_dir = FALSE, $force = FALSE) {
     // Pull the base
     $base = $this->getBase();
+
+    // Get the core if it wasn't specified on the CLI
+    if (!$this->isValidCore($core)) {
+      $this->last_error = "$core is an invalid core";
+      return FALSE;
+    }
 
     // Handle destination directory
     if (!$dest_dir) {
@@ -285,11 +291,6 @@ class Dslm {
     }
     elseif (file_exists($dest_dir)) {
       $dest_dir = realpath($dest_dir);
-    }
-
-    // Get the core if it wasn't specified on the CLI
-    if (!$core || !$this->isValidCore($core)) {
-      $core = $this->chooseCore();
     }
 
     // They've had the option to cancel when choosing a core
@@ -738,29 +739,6 @@ class Dslm {
     }
     $d->close();
     return $out;
-  }
-
-  /**
-   * Internal function to get the core through interactive input
-   *
-   * @return string
-   *  Returns the use chosen core
-   */
-  protected function chooseCore() {
-    // Pull our cores
-    $get_cores = $this->getCores();
-    $cores = $get_cores['all'];
-
-    // Present the cores to the user
-    foreach ($cores as $k => $core) {
-      print $k+1 . ". $core\n";
-    }
-    // Get the users's choice
-    fwrite(STDOUT, "Choose a core: ");
-    $core_choice = fgets(STDIN);
-
-    // Return the chosen core
-    return $cores[$core_choice-1];
   }
 
   /**

@@ -242,7 +242,7 @@ function drush_dslm_add_profile() {
   $profiles = $dslm->getProfiles();
 
   // Get the profile name via args or interactively
-  $profile_name = isset($args[2]) ? $args[2] : FALSE;
+  $profile_name = isset($args[1]) ? $args[1] : FALSE;
   if (!$profile_name) {
     $choices = array();
     foreach ($profiles as $k => $v) {

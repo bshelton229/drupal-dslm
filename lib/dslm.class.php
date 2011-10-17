@@ -363,67 +363,6 @@ class Dslm {
     return $core;
   }
 
-  /** This method is being replaced by manageProfile() **/
-  // public function switchprofile($dest_dir = FALSE, $profile = FALSE, $force = FALSE, $filter = FALSE) {
-  //   // Pull the base
-  //   $base = $this->getBase();
-  //   // Handle destination directory
-  //   if (!$dest_dir) {
-  //     $dest_dir = getcwd();
-  //   }
-  //   else {
-  //     $dest_dir = realpath($dest_dir);
-  //   }
-  //   // Make sure this is a drupal base
-  //   if (!$this->isDrupalDir($dest_dir) && !$force) {
-  //     $this->last_error = 'Invalid Drupal Directory';
-  //     return FALSE;
-  //   }
-  //
-  //   // Get the profile if it wasn't specified on the CLI
-  //   if (!$profile || !$this->isValidProfile($profile)) {
-  //     $profile = $this->chooseProfile($filter);
-  //   }
-  //
-  //   $source_profile_dir = $this->getBase() . "/profiles/" . $profile;
-  //   $profiles_dir = $dest_dir . '/profiles/';
-  //
-  //   // Link it up
-  //   if (is_dir($profiles_dir)) {
-  //     // @TODO-matt: name of $profile.
-  //     $profile_dir = $profiles_dir . '/' . $profile;
-  //
-  //     // Remove the current profiles/$profile directory if it's a link
-  //     if (is_link($profile_dir)) {
-  //       if ($this->isWindows()) {
-  //         $target = readlink($profile_dir);
-  //         if (is_dir($target)) {
-  //           rmdir($profile_dir);
-  //         }
-  //         else {
-  //           unlink($profile_dir);
-  //         }
-  //       }
-  //       else {
-  //         // We're a sane operating system, just remove the link
-  //         unlink($profile_dir);
-  //       }
-  //     }
-  //     else {
-  //       // If there is a profiles/$profile directory which isn't a symlink we're going to be safe and error out
-  //       if (file_exists($profile_dir)) {
-  //         $this->last_error = 'The profile directory already exists and is not a symlink';
-  //         return FALSE;
-  //       }
-  //     }
-  //
-  //     // Create our new symlink to the correct profile
-  //     $profile_link_path = $this->relpath($source_profile_dir, $profiles_dir);
-  //     symlink($profile_link_path, $profile_dir);
-  //   }
-  //   return $profile;
-  // }
-
   /**
    * Manage a Profile
    *

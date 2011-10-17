@@ -39,6 +39,15 @@ class Dslm {
    */
   protected $profile_regex = '/^([A-Z0-9_]+)\-((\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*))$/i';
 
+
+  /**
+   * An array of regex patterns for matching filenames to
+   * to not be symlinked from the root of cores.
+   *
+   * @var array
+   */
+  protected $ignore_core_file_patterns = array('/^.git$/');
+
   /**
    * DSLM constructor
    *
@@ -310,7 +319,13 @@ class Dslm {
     foreach ($this->filesInDir($source_dir) as $f) {
       // We do not want to link the the sites or profiles directories
       // We'll add slugs later
-      if($f == "sites" || $f == "profiles") { continue; }
+      if ($f == "sites" || $f == "profiles") {
+        continue;
+      }
+      // See if we're meant to ignore the core file
+      if ($this->ignoreCoreFile($f)) {
+        continue;
+      }
       $relpath = $this->relpath($source_dir, $dest_dir);
       symlink("$relpath/$f", "$dest_dir/$f");
     }
@@ -840,5 +855,23 @@ class Dslm {
    */
   protected function isWindows() {
     return preg_match('/^win/i',PHP_OS);
+  }
+
+  /**
+   * Whether or not to ignore a file in a core root directory
+   * Uses regular expressions from $this->ignore_core_file_patterns
+   *
+   * @param string $f
+   *  A filename to check
+   * @return boolean
+   *  Returns whether or not to ignore the file
+   */
+  function ignoreCoreFile($f) {
+    foreach ($this->ignore_core_file_patterns as $ignore_pattern) {
+      if ( preg_match($ignore_pattern, $f) ) {
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
 }

@@ -114,6 +114,11 @@ class Dslm {
    *  Returns an associative array of profiles grouped by profile name
    */
   public function getProfiles() {
+    // If the base has no profiles, return empty array.
+    if (!file_exists($this->getBase(). '/profiles/')) {
+      return array();
+    }
+
     $profiles = array();
 
     // Reusable regex for determining if the profile strin is dev or release
@@ -327,6 +332,9 @@ class Dslm {
         continue;
       }
       $relpath = $this->relpath($source_dir, $dest_dir);
+      if (file_exists("$dest_dir/$f")) {
+        continue;
+      }
       symlink("$relpath/$f", "$dest_dir/$f");
     }
 
@@ -568,7 +576,7 @@ class Dslm {
   protected function validateBase($base) {
     if (is_dir($base)) {
       $contents = $this->filesInDir($base);
-      $check_for = array('profiles', 'cores');
+      $check_for = array('cores');
       foreach ($check_for as $check) {
         if (!in_array($check, $contents)) {
           return FALSE;
@@ -715,6 +723,9 @@ class Dslm {
       'update.php',
       'cron.php',
     );
+    
+    /* TODO: update for drupal 8's core/dir */
+
     foreach ($checks as $check) {
       if (!in_array($check,$files)) {
         return FALSE;

@@ -1,67 +1,50 @@
-DESCRIPTION
------------
-DSLM is a set of Drush commands for managing symlinking Drupal
-sites back to a central set of Drupal cores and distributions.
+DSLM - Drupal Symlink Manager
+=============================
+DSLM is a set of Drush commands for managing symlinking Drupal sites back to a central set of Drupal cores and installation profiles.
 
 
-REQUIREMENTS
-------------
-* Drush
+Dependencies
+============
+ - Drush: http://drupal.org/project/drush
 
 
-DSLM-BASE
----------
-The DSLM base folder must contain both a cores and dists sub-folder.
-The cores and dists folders contain Drupal cores and sites/all
-distributions compatible with the cores. Like this:
+Configuration and Installation
+==============================
+The first thing you'll want to do is set up your DSLM base folder. The DSLM base folder must contain, at the very least,  a "cores" directory which contains direct checkouts of drupal core. You may also add a "profiles" directory to hold any shared installation profiles you might want to use. Profiles and Cores must be suffixed with a version number, like this:
 
-    -- dslm_base
-        -- cores
-            -- drupal-6.18
-            -- drupal-6.20
-            -- drupal-7.0
-        -- dists
-            -- 6.x-1.0
-            -- 6.x-1.1
-            -- 7.x-1.0
-            -- 7.x-1.1
-                -- modules
-                -- themes
-                -- libraries
+-- dslm_base
+  -- cores
+    -- drupal-6.18
+    -- drupal-6.20
+    -- drupal-7.12
+  -- profiles
+    -- myInstallProfile-6.x-1.0
+    -- myInstallProfile-6.x-1.1
+    -- myInstallProfile-7.x-1.0
+    -- myInstallProfile-7.x-1.1
+      -- myInstallProfile.profile
+      -- modules
+      -- themes
+      -- libraries
 
-Once your base is set up as described above, you'll need to pass it to
-drush dslm in order to run commands. There are three ways to set the
-location of your base.
+Once your base is set up as described above, you'll need to pass it to drush dslm in order to run commands. There are three ways to set the location of your base.
 
-The base can be set using any of the options below. It will first look for
-the cli switch, then in your drushrc.php and finally for an enviro var.
- - The cli switch --dslm-base=base
- - The drushrc.php file $conf['dslm_base'] = base;
- - The DSLM_BASE system environment variable
+The base can be set using any of the options below. It will first look for the cli switch, then in your drushrc.php and finally for an enviro var.
 
+- The cli switch --dslm-base=/path/to/dslm_base
+- The drushrc.php file $conf['dslm_base'] = /path/to/dslm_base;
+- The DSLM_BASE system environment variable
 
-COMMANDS
---------
-drush dslm-new [site-directory] [dist] [core]
-Will create a new site prompting you to choose which core and distribution 
-it should be linked to. If you pass the --latest flag, the latest stable
-core and distribution will automatically be chosen (--dev uses the latest
-development version.) You may optionally pass a valid core and dist on the
-command line to run non-interactively.
+DSLM Commands
+=============
+drush dslm-new [site-directory] [core]
+Will create a new site prompting you to choose which core it should be linked to. If you pass the --latest flag, the latest core will automatically be chosen. You may optionally pass a valid core on the command line to run non-interactively (ie "drush dslm-new newSite drupal-7.12")
 
 drush dslm-info
-Will display the current core and distribution linked to the directory
-you're in.
+Will display the current core and any managed profiles linked to the directory you're in.
 
-drush dslm-switch [core] [dist]
-Will prompt you to switch the core and distribution. If you specify a valid
-core and dist on the command line, they will be used, otherwise, you will
-be prompted.
+drush dslm-switch-core
+Will prompt you to switch the core. If you specify a valid core on the command line, it will be used, otherwise, you will be prompted.
 
-drush dslm-switch-core [core]
-Will prompt you to switch the core. If you specify a valid core on the
-command line, it will be used, otherwise, you will be prompted.
-
-drush dslm-switch-dist [dist]
-Will prompt you to switch the dist. If you specify a valid dist, it will be
-used, otherwise, you will be prompted.
+drush dslm-add-profile
+Will prompt you to add a managed installation profile. If you specify a valid profile on the command line, it will be used, otherwise, you will be prompted.

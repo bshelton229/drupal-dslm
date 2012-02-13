@@ -33,17 +33,26 @@ class Dslm {
   protected $core_regex = '/(.+)\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
 
   /**
-   * Define a dist parsing regular expression
+   * Define a profile parsing regular expression
    *
    * @var string
    */
-  protected $dist_regex = '/(\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
+  //protected $profile_regex = '/^([A-Z0-9_]+)\-((\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*))$/i';
+  protected $profile_regex = '/(.+)\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
+
+  /**
+   * An array of regex patterns for matching filenames to
+   * to not be symlinked from the root of cores.
+   *
+   * @var array
+   */
+  protected $ignore_core_file_patterns = array('/^.git$/');
 
   /**
    * DSLM constructor
    *
    * @param $base
-   *  The base path containing the dists and cores
+   *  The base path containing the profiles and cores
    */
   public function __construct($base) {
     // Validate the base
@@ -99,57 +108,68 @@ class Dslm {
   }
 
   /**
-   * Get the dists
+   * Get the profiles
    *
    * @return array
-   *  Returns an array or dists
+   *  Returns an associative array of profiles grouped by profile name
    */
-  public function getDists() {
-    $all = array();
-    $pre_releases = array();
-    $releases = array();
+  public function getProfiles() {
+    // If the base has no profiles, return empty array.
+    if (!file_exists($this->getBase(). '/profiles/')) {
+      return array();
+    }
 
-    foreach ($this->filesInDir($this->getBase() . "/dists/") as $dist) {
-      if ($this->isDistString($dist)) {
-        $all[] = $dist;
+    $profiles = array();
 
+    // Reusable regex for determining if the profile strin is dev or release
+    $dev_regex = '/[dev|alph|beta|rc|pl]+[\.\d]*$/i';
+    
+    // Iterate through and get the profiles into named groups
+    foreach ($this->filesInDir($this->getBase() . "/profiles/") as $profile) {
+      if ($matches = $this->isProfileString($profile)) {
+
+        $profiles[$matches[1]]['all'][] = $matches[2];
         // Test for pre-releases
-        if (preg_match('/[dev|alph|beta|rc|pl]+[\.\d]*$/i', $dist)) {
-          $pre_releases[] = $dist;
+        if (preg_match($dev_regex, $profile)) {
+          $profiles[$matches[1]]['dev'][] = $matches[2];
         }
         else {
-          $releases[] = $dist;
+          $profiles[$matches[1]]['release'][] = $matches[2];
+        }
+      }
+    }
+    
+    // Normalize and sort the named group sub-arrays
+    foreach ($profiles as $name => $value) {
+      foreach (array('all', 'dev', 'release') as $class) {
+        if (isset($value[$class])) {
+          usort($profiles[$name][$class], 'version_compare');
+        }
+        else {
+          // We probably want at least an empty array for each class
+          $profiles[$name][$class] = array();
         }
       }
     }
 
-    $out = array(
-      'all' => $this->orderByVersion('dist', $all),
-      'dev' => $this->orderByVersion('dist', $pre_releases),
-      'release' => $this->orderByVersion('dist', $releases),
-    );
-
-    return $out;
+    // Return the profiles array
+    return $profiles;
   }
 
   /**
-   * Return the latest versions of core and dist
-   * broken up by core/dist, dev_core/dev_dist, and release_core/release_dist
+   * Return the latest versions of core
+   * broken up by all, dev, and release
    *
    * @return array
-   *   Returns an array of the various latest versions
+   *   Returns an array of the various latest cores
    */
-  public function latest() {
+  public function latestCores() {
     $cores = $this->getCores();
-    $dists = $this->getDists();
 
     return array(
-      'core' => $cores['all'][count($cores['all'])-1],
-      'dist' => $dists['all'][count($dists['all'])-1],
-      'dev_core' => $cores['dev'][count($cores['dev'])-1],
-      'dev_dist' => $dists['dev'][count($dists['dev'])-1],
-      'release_core' => $cores['release'][count($cores['release'])-1],
-      'release_dist' => $dists['release'][count($dists['release'])-1],
+      'all' => $cores['all'][count($cores['all'])-1],
+      'dev' => $cores['dev'][count($cores['dev'])-1],
+      'release' => $cores['release'][count($cores['release'])-1],
     );
   }
 
@@ -167,16 +187,31 @@ class Dslm {
   }
 
   /**
-   * Check dist
+   * Check profile
    *
-   * @param string $dist
-   *  The dist to check
+   * @param string $profile
+   *  The profile to check
    * @return boolean
-   *  Returns a boolean for whether the dist is valid or not
+   *  Returns a boolean for whether the profile is valid or not
    */
-  public function isValidDist($dist) {
-    $dists = $this->getDists();
-    return in_array($dist, $dists['all']);
+  public function isValidProfile($name, $version = FALSE) {
+    $profiles = $this->getProfiles();
+    if (isset($profiles[$name])) {
+      if ($version) {
+        if (in_array($version, $profiles[$name]['all'])) {
+          return TRUE;
+        }
+        else {
+          return FALSE;
+        }
+      }
+      else {
+        return TRUE;
+      }
+    }
+    else {
+      return FALSE;
+    }
   }
 
   /**
@@ -185,26 +220,26 @@ class Dslm {
    * @param boolean $d
    *  The directory to use as the base, this will default to getcwd()
    * @return array
-   *  Returns an array containing the current dist and core or FALSE
+   *  Returns an array containing the current profile and core or FALSE
    */
   public function siteInfo($d = FALSE) {
     if (!$d) {
       $d = getcwd();
     }
-    if (!$this->isDrupalDir($d)) {
-      $this->last_error = 'This directory isn\'t a Drupal dir';
-      return FALSE;
-    }
+
     $core = $this->firstLinkDirname($d);
-    $dist = $this->firstLinkBasename($d.'/sites');
-    if (!$core || !$dist) {
+    $managed_profiles = $this->managedProfiles($d);
+
+    if (!$core) {
       $this->last_error = 'Invalid symlinked site';
       return FALSE;
     }
+
     $out = array(
       'core' => $core,
-      'dist' => $dist,
+      'profiles' => $managed_profiles,
     );
+
     return $out;
   }
 
@@ -215,15 +250,15 @@ class Dslm {
    *  The destination directory for the new site
    * @param string $core
    *  The core to use
-   * @param string $dist
-   *  The dist to use
+   * @param string $profile
+   *  The profile to use
    * @param boolean $force
    *  Whether or not to force the site creation
    *
    * @return boolean
    *  Returns boolean
    */
-  public function newSite($dest_dir, $core = FALSE, $dist = FALSE, $force = FALSE) {
+  public function newSite($dest_dir, $core = FALSE, $force = FALSE) {
     // Load the base
     $base = $this->getBase();
 
@@ -234,22 +269,9 @@ class Dslm {
       return FALSE;
     }
 
-    // Run the dist and core switches
-    $core = $this->switchCore($dest_dir, $core, TRUE);
-    $dist = $this->switchDist($dest_dir, $dist, TRUE, $core);
+    // Run the profile and core switches
+    $core = $this->switchCore($core, $dest_dir, TRUE);
 
-    // Create sites/default structure
-    $dest_sites_default = "$dest_dir/sites/default";
-    if (!file_exists($dest_sites_default)) {
-      mkdir($dest_sites_default);
-      mkdir("$dest_sites_default/files");
-      copy(
-        "$base/cores/$core/sites/default/default.settings.php",
-        "$dest_sites_default/default.settings.php"
-      );
-    }
-
-    // Break here for testing right now
     return TRUE;
   }
 
@@ -267,9 +289,15 @@ class Dslm {
    * @return string
    *  Returns the core it switched to.
    */
-  public function switchCore($dest_dir = FALSE, $core = FALSE, $force = FALSE) {
+  public function switchCore($core, $dest_dir = FALSE, $force = FALSE) {
     // Pull the base
     $base = $this->getBase();
+
+    // Get the core if it wasn't specified on the CLI
+    if (!$this->isValidCore($core)) {
+      $this->last_error = "$core is an invalid core";
+      return FALSE;
+    }
 
     // Handle destination directory
     if (!$dest_dir) {
@@ -277,17 +305,6 @@ class Dslm {
     }
     elseif (file_exists($dest_dir)) {
       $dest_dir = realpath($dest_dir);
-    }
-
-    // Make sure this is a drupal base
-    if (!$this->isDrupalDir($dest_dir) && !$force) {
-      $this->last_error = 'Invalid Drupal Directory';
-      return FALSE;
-    }
-
-    // Get the core if it wasn't specified on the CLI
-    if (!$core || !$this->isValidCore($core)) {
-      $core = $this->chooseCore();
     }
 
     // They've had the option to cancel when choosing a core
@@ -299,93 +316,160 @@ class Dslm {
     }
 
     $source_dir = "$base/cores/$core";
+
+    // Remove any existing symlinks in the dest dir that link back to a core folder
     $this->removeCoreLinks($dest_dir);
+
+    // Iterate through the source files and start linking
     foreach ($this->filesInDir($source_dir) as $f) {
-      // Never link sites
-      if ($f == "sites") {
+      // We do not want to link the the sites or profiles directories
+      // We'll add slugs later
+      if ($f == "sites" || $f == "profiles") {
+        continue;
+      }
+      // See if we're meant to ignore the core file
+      if ($this->ignoreCoreFile($f)) {
         continue;
       }
       $relpath = $this->relpath($source_dir, $dest_dir);
+      if (file_exists("$dest_dir/$f")) {
+        continue;
+      }
       symlink("$relpath/$f", "$dest_dir/$f");
     }
+
+    // See if we need to create a profiles dir or sites dir tree
+    if(!file_exists("$dest_dir/sites")) {
+      mkdir("$dest_dir/sites");
+      mkdir("$dest_dir/sites/all");
+      mkdir("$dest_dir/sites/all/modules");
+      mkdir("$dest_dir/sites/all/modules/contrib");
+      mkdir("$dest_dir/sites/all/modules/custom");
+      mkdir("$dest_dir/sites/all/libraries");
+      mkdir("$dest_dir/sites/all/themes");
+      mkdir("$dest_dir/sites/default");
+      mkdir("$dest_dir/sites/default/files");
+    }
+    // Copy over the default.settings.php file
+    copy(
+      "$source_dir/sites/default/default.settings.php",
+      "$dest_dir/sites/default/default.settings.php"
+    );
+
+    // Link in the Drupal stock profiles
+    if(!file_exists("$dest_dir/profiles")) {
+      mkdir("$dest_dir/profiles");
+    }
+
+    // Try to link the existing Drupal profiles
+    foreach($this->filesInDir("$source_dir/profiles") as $f) {
+      if(is_link("$dest_dir/profiles/$f")) {
+        unlink("$dest_dir/profiles/$f");
+      }
+      if(!file_exists("$dest_dir/profiles/$f")) {
+        $relpath = $this->relpath("$source_dir/profiles", "$dest_dir/profiles");
+        symlink("$relpath/$f", "$dest_dir/profiles/$f");
+      }
+    }
+
+    // Return the core we just linked to
     return $core;
   }
 
   /**
-   * Switch the distribution
+   * Manage a Profile
    *
-   * @param string $dest_dir
-   *  The destination dir to switch the dist for.
-   * @param string $dist
-   *  The dist to switch to.
-   * @param boolean $force
-   *  Whether or not to force the switch
-   * @param string $filter
-   *  The major core version to filter for
+   * @param string $name
+   *  The profile name
+   * @param string $version
+   *  The profile version
+   * @param string $dir
+   *  The site base directory. Defaults to FALSE which will render getcwd()
+   *  in the method.
+   * @param boolean $upgade
+   *  Whether or not the method is to attemp to change the version if the directory
+   *  already exists and is managed, or whether the method is to bail.
    *
    * @return string
-   *  Returns the core it switched to.
+   *  Returns the profile string we just switched to.
    */
-  public function switchDist($dest_dir = FALSE, $dist = FALSE, $force = FALSE, $filter = FALSE) {
-    // Pull the base
-    $base = $this->getBase();
-    // Handle destination directory
-    if (!$dest_dir) {
-      $dest_dir = getcwd();
-    }
-    else {
-      $dest_dir = realpath($dest_dir);
-    }
-    // Make sure this is a drupal base
-    if (!$this->isDrupalDir($dest_dir) && !$force) {
-      $this->last_error = 'Invalid Drupal Directory';
+  public function manageProfile($name, $version, $dir = FALSE, $upgrade = FALSE) {
+    // Bail if the profile isn't valid
+    if (!$this->isValidProfile($name, $version)) {
       return FALSE;
     }
-    // Get the core if it wasn't specified on the CLI
-    if (!$dist || !$this->isValidDist($dist)) {
-      $dist = $this->chooseDist($filter);
+
+    // Default the directory to getcwd()
+    if (!$dir) {
+      $dir = getcwd();
     }
 
-    $source_dist_dir = $this->getBase() . "/dists/$dist";
-    $sites_dir = $dest_dir . '/sites';
+    // Set some path variables to make things easier
+    $base = $this->base;
+    $dest_profiles_dir = "$dir/profiles";
+    $source_profile_dir = "$base/profiles/$name-$version";
 
-    // If the sites dir doesn't exist, create it
-    if (!file_exists($sites_dir)) { mkdir($sites_dir); }
-
-    // Link it up
-    if (is_dir($sites_dir)) {
-      // Define the sites/all directory
-      $sites_all_dir = $sites_dir . "/" . "all";
-
-      // Remove the current sites/all directory if it's a link
-      if (is_link($sites_all_dir)) {
-        if ($this->isWindows()) {
-          $target = readlink($sites_all_dir);
-          if (is_dir($target)) {
-            rmdir($sites_all_dir);
-          }
-          else {
-            unlink($sites_all_dir);
-          }
-        }
-        else {
-          // We're a sane operating system, just remove the link
-          unlink($sites_all_dir);
-        }
-      }
-      else {
-        // If there is a sites/all directory which isn't a symlink we're going to be safe and error out
-        if (file_exists($sites_all_dir)) {
-          $this->last_error = 'The sites/all directory already exists and is not a symlink';
-          return FALSE;
-        }
-      }
-
-      // Create our new symlink to the correct dist
-      $dist_link_path = $this->relpath($source_dist_dir, $sites_dir);
-      symlink($dist_link_path, $sites_all_dir);
+    // See if the profile is already linked
+    if(file_exists("$dir/profiles/$name") && !$upgrade) {
+      // TODO add a method that checks to see if this is a link
+      // and it's a link to our profiles base, if so, see if we're
+      // in the upgrade business based on method options
+      $this->last_error = "The profile '$name' is already linked to this site.";
+      return FALSE;
     }
-    return $dist;
+
+    // Relative path between the two profiles folders
+    $relpath = $this->relpath("$base/profiles", "$dir/profiles");
+
+    // Working symlink
+    symlink("$relpath/$name-$version", "$dir/profiles/$name");
+
+    return "$name-$version";
+  }
+
+  /**
+   * Get an array of managed profiles
+   *
+   * @param string $dir
+   *  The base site directory. Defaults to FALSE which will cause the method
+   *  to use getcwd()
+   *
+   * @return array
+   *  Returns an array of profile strings managed within the site dir.
+   *
+   */
+  public function managedProfiles($dir = FALSE) {
+    $managed_profiles = array();
+
+    // Default to the current working directory
+    if (!$dir) {
+      $dir = getcwd();
+    }
+
+    // Make sure there is a profiles directory
+    // If not return an empty array
+    if (!is_dir("$dir/profiles")) {
+      return array();
+    }
+
+    // Pull a list of profiles in the base
+    $profiles = $this->getProfiles();
+
+    // Iterate through the local profiles
+    foreach($this->filesInDir("$dir/profiles") as $f) {
+      $fullpath = "$dir/profiles/$f";
+      if (is_link($fullpath)) {
+        $name = basename(readlink($fullpath));
+        if ($matches = $this->isProfileString($name)) {
+          if ($this->isValidProfile($matches[1], $matches[2])) {
+            $managed_profiles[] = $name;
+          }
+        }
+      }
+    }
+
+    // Return any profiles managed within this directory
+    return $managed_profiles;
   }
 
   /**
@@ -410,23 +494,10 @@ class Dslm {
   }
 
   /**
-   * Determine if we're MS Windows
-   *
-   * I was able to resist the urge not to name this method isBrokenOs()
-   * but not the urge to put the idea in this comment
-   *
-   * @return boolean
-   *  For whether we're windows or not.
-   */
-  public function isWindows() {
-    return preg_match('/^win/i',PHP_OS);
-  }
-
-  /**
-   * Takes an array of core or dist versions and sorts them by version number
+   * Takes an array of core or profile versions and sorts them by version number
    *
    * @param string $type
-   *  Should be core or dist to determine which we're sorting. Defaults to core
+   *  Should be core or profile to determine which we're sorting. Defaults to core
    * @param array $v
    *  An array containing the versions to sort
    *
@@ -469,24 +540,34 @@ class Dslm {
    * @param string $s
    *  The core string to validate
    *
-   * @return boolean
-   *  Returns a boolean for validated or not
+   * @return array
+   *  Returns an array from preg_match or FALSE
    */
   public function isCoreString($s) {
-    return preg_match($this->core_regex, $s);
+    if (preg_match($this->core_regex, $s, $matches)) {
+      return $matches;
+    }
+    else {
+      return FALSE;
+    }
   }
 
   /**
-   * Distribution validation
+   * Profile validation
    *
    * @param string $s
-   *  The dist string to validate
+   *  The profile string to validate
    *
-   * @return boolean
-   *  Returns a boolean for validated or not
+   * @return array
+   *  Returns an array from preg_match or FALSE
    */
-  public function isDistString($s) {
-    return preg_match($this->dist_regex, $s);
+  public function isProfileString($s) {
+    if (preg_match($this->profile_regex, $s, $matches)) {
+      return $matches;
+    }
+    else {
+      return FALSE;
+    }
   }
 
   /**
@@ -500,7 +581,7 @@ class Dslm {
   protected function validateBase($base) {
     if (is_dir($base)) {
       $contents = $this->filesInDir($base);
-      $check_for = array('dists', 'cores');
+      $check_for = array('cores');
       foreach ($check_for as $check) {
         if (!in_array($check, $contents)) {
           return FALSE;
@@ -628,73 +709,6 @@ class Dslm {
   }
 
   /**
-   * Internal function to get the core through interactive input
-   *
-   * @return string
-   *  Returns the use chosen core
-   */
-  protected function chooseCore() {
-    // Pull our cores
-    $get_cores = $this->getCores();
-    $cores = $get_cores['all'];
-
-    // Present the cores to the user
-    foreach ($cores as $k => $core) {
-      print $k+1 . ". $core\n";
-    }
-    // Get the users's choice
-    fwrite(STDOUT, "Choose a core: ");
-    $core_choice = fgets(STDIN);
-
-    // Return the chosen core
-    return $cores[$core_choice-1];
-  }
-
-  /**
-   * Internal function to get the distribution through interactive input
-   *
-   * @param string $version_check
-   *  Which major version to filter the choices by
-   *
-   * @return string
-   *  Returns the user chosen dist
-   */
-  protected function chooseDist($version_check = FALSE) {
-    // Pull our distributions
-    $get_dists = $this->getDists();
-    $dists = $get_dists['all'];
-
-    // Version filtering
-    if ($version_check) {
-      preg_match('/-(\d+)\./', $version_check, $version_match);
-      if (isset($version_match[1])) {
-        $filtered_dists = array();
-        $version_filter = $version_match[1];
-        // Now clean the dists array
-        foreach ($dists as $k => $dist) {
-          if (preg_match("/^$version_filter/", $dist)) {
-            //unset($dists[$k]);
-            $filtered_dists[] = $dist;
-          }
-        // This re-keys the array so the keys are sequential after the unset
-        $dists = $filtered_dists;
-        }
-      }
-    }
-
-    // Print the list that has already been filtered if necessary
-    foreach ($dists as $k => $dist) {
-      print $k+1 . ". $dist\n";
-    }
-    // Get user input
-    fwrite(STDOUT, "Choose a dist: ");
-    $dist_choice = fgets(STDIN);
-
-    // Return the chosen dist
-    return $dists[$dist_choice-1];
-  }
-
-  /**
    * Internal function to verify a directory is a drupal base
    *
    * @param string $d
@@ -714,6 +728,9 @@ class Dslm {
       'update.php',
       'cron.php',
     );
+    
+    /* TODO: update for drupal 8's core/dir */
+
     foreach ($checks as $check) {
       if (!in_array($check,$files)) {
         return FALSE;
@@ -780,5 +797,36 @@ class Dslm {
       }
     }
     return $path. $fix;
+  }
+
+  /**
+   * Determine if we're MS Windows
+   *
+   * I was able to resist the urge not to name this method isBrokenOs()
+   * but not the urge to put the idea in this comment
+   *
+   * @return boolean
+   *  For whether we're windows or not.
+   */
+  protected function isWindows() {
+    return preg_match('/^win/i',PHP_OS);
+  }
+
+  /**
+   * Whether or not to ignore a file in a core root directory
+   * Uses regular expressions from $this->ignore_core_file_patterns
+   *
+   * @param string $f
+   *  A filename to check
+   * @return boolean
+   *  Returns whether or not to ignore the file
+   */
+  function ignoreCoreFile($f) {
+    foreach ($this->ignore_core_file_patterns as $ignore_pattern) {
+      if ( preg_match($ignore_pattern, $f) ) {
+        return TRUE;
+      }
+    }
+    return FALSE;
   }
 }

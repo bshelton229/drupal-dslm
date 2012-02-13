@@ -37,8 +37,8 @@ class Dslm {
    *
    * @var string
    */
-  protected $profile_regex = '/^([A-Z0-9_]+)\-((\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*))$/i';
-
+  //protected $profile_regex = '/^([A-Z0-9_]+)\-((\d+)\.x\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*))$/i';
+  protected $profile_regex = '/(.+)\-([\d\.x]+\-*[dev|alph|beta|rc|pl]*[\d]*)$/i';
 
   /**
    * An array of regex patterns for matching filenames to
@@ -123,7 +123,7 @@ class Dslm {
 
     // Reusable regex for determining if the profile strin is dev or release
     $dev_regex = '/[dev|alph|beta|rc|pl]+[\.\d]*$/i';
-
+    
     // Iterate through and get the profiles into named groups
     foreach ($this->filesInDir($this->getBase() . "/profiles/") as $profile) {
       if ($matches = $this->isProfileString($profile)) {
@@ -138,7 +138,7 @@ class Dslm {
         }
       }
     }
-
+    
     // Normalize and sort the named group sub-arrays
     foreach ($profiles as $name => $value) {
       foreach (array('all', 'dev', 'release') as $class) {
@@ -342,6 +342,11 @@ class Dslm {
     if(!file_exists("$dest_dir/sites")) {
       mkdir("$dest_dir/sites");
       mkdir("$dest_dir/sites/all");
+      mkdir("$dest_dir/sites/all/modules");
+      mkdir("$dest_dir/sites/all/modules/contrib");
+      mkdir("$dest_dir/sites/all/modules/custom");
+      mkdir("$dest_dir/sites/all/libraries");
+      mkdir("$dest_dir/sites/all/themes");
       mkdir("$dest_dir/sites/default");
       mkdir("$dest_dir/sites/default/files");
     }

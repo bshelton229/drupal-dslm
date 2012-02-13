@@ -48,7 +48,7 @@ function dslm_drush_command() {
   );
 
   $items['dslm-profiles'] = array(
-    'description' => 'DSLM  Show Profiles',
+    'description' => 'DSLM Show Profiles',
     'arguments' => $arguments,
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
@@ -92,9 +92,9 @@ function drush_dslm_info() {
 
   $out = "Core: {$info['core']}\n";
   if(!empty($info['profiles'])) {
-    $out .= "Managed Profiles:\n";
+    $out .= "Managed Profiles: ";
     foreach($info['profiles'] as $profile) {
-      $out .= "  $profile\n";
+      $out .= "$profile ";
     }
   }
 
